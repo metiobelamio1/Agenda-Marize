@@ -2211,6 +2211,9 @@ DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; });
 // banco. As chaves realmente secretas (Access Token do Mercado Pago,
 // Service Role) ficam só dentro das Edge Functions, nunca aqui.
 const PAYMENT_FUNCTIONS_BASE = 'https://fumvxzcfpdwkabimxmgx.supabase.co/functions/v1';
+// Se o Supabase do projeto usa as chaves novas, cole aqui a "publishable key" (sb_publishable_...) de
+// Settings > API Keys. Se ficar vazio, usa a chave anon antiga. Só é usada no header "apikey" do cartão.
+const PAYMENT_PUBLISHABLE_KEY = '';
 const PAYMENT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1bXZ4emNmcGR3a2FiaW14bWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMTM3OTQsImV4cCI6MjEwNTc4OTc5NH0.RkCet0wNU5XkMQbtp_iD99kXuT2JwxBumZNDmFnVJ4c';
 
 
@@ -6576,7 +6579,11 @@ async function renderCardBrick(email){
         try{
           const resp = await fetch(`${PAYMENT_FUNCTIONS_BASE}/mp-create-card-payment`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${PAYMENT_ANON_KEY}`, 'Content-Type': 'application/json' },
+            headers: {
+              'apikey': PAYMENT_PUBLISHABLE_KEY || PAYMENT_ANON_KEY,
+              'Authorization': `Bearer ${PAYMENT_ANON_KEY}`,
+              'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
               appointmentId: c.appt.id, valor: c.value, payerEmail: email, formData,
               descricao: c.type === 'total' ? 'Pagamento integral da consulta' : 'Sinal de confirmação de consulta'
