@@ -6552,7 +6552,8 @@ async function renderCardBrick(email){
     initialization: { amount: Number(c.value), payer: { email } },
     customization: { paymentMethods: { minInstallments: 1, maxInstallments: 6 } },
     callbacks: {
-      onReady: ()=>{},
+      onReady: ()=>{ console.log('[Card Brick] pronto | chave:', MP_PUBLIC_KEY, '| valor:', c.value); },
+      onBinChange: (bin)=>{ console.log('[Card Brick] BIN digitado:', bin); },
       onError: (err)=>{
         let det = '';
         try{ det = JSON.stringify(err, Object.getOwnPropertyNames(err || {}), 2); }catch(_){ det = String(err); }
@@ -6560,7 +6561,13 @@ async function renderCardBrick(email){
         console.error('[Card Brick] detalhes:', det);
         console.error('[Card Brick] origem da página:', location.origin, '| protocolo:', location.protocol, '| contexto seguro:', window.isSecureContext);
         const causa = err && (err.cause || err.message);
-        if(err && err.type === 'non_critical'){ return; } // erros de campo (validação) — o próprio Brick já mostra
+        if(err && err.type === 'non_critical'){
+          // BIN sem meio de pagamento: o Mercado Pago não aceita este cartão para esta conta/chave.
+          if(err.cause === 'missing_payment_information' || err.message === 'no_payment_method_for_provided_bin'){
+            cardMsg('O Mercado Pago não reconheceu este cartão. Tente outro cartão ou pague por Pix.', true);
+          }
+          return;
+        }
         cardMsg('Erro no formulário do cartão' + (causa ? ' (' + (Array.isArray(causa) ? causa.join(', ') : causa) + ')' : '') + '. Veja o console (F12).', true);
       },
       onSubmit: async (formData)=>{
@@ -6591,6 +6598,16 @@ async function renderCardBrick(email){
     }
   });
 }
+// DIAGNÓSTICO (pode remover depois): no console, rode  await mpDiag('43926726')
+// Mostra a chave em uso, se ela é aceita pelo Mercado Pago e quais meios de pagamento existem para o BIN.
+window.mpDiag = async function(bin){
+  const mp = mpInstance || new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
+  console.log('[mpDiag] chave em uso:', MP_PUBLIC_KEY);
+  try{ console.log('[mpDiag] tipos de documento:', await mp.getIdentificationTypes()); }
+  catch(e){ console.error('[mpDiag] chave recusada / falha ao listar documentos:', e); }
+  try{ console.log('[mpDiag] meios de pagamento para o BIN ' + bin + ':', await mp.getPaymentMethods({ bin: String(bin) })); }
+  catch(e){ console.error('[mpDiag] falha ao buscar meios pelo BIN:', e); }
+};
 document.getElementById('cardContinueBtn').addEventListener('click', async ()=>{
   const email = document.getElementById('cardEmail').value.trim();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ cardMsg('Informe um e-mail válido para continuar.', true); return; }
