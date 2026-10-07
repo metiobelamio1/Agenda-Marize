@@ -1996,7 +1996,14 @@ span.prof-tag.removable{
       </select>
       </div>
     </div>
-    <div id="cardBrickWrap" style="display:none;"><div id="cardPaymentBrick_container"></div></div>
+    <div id="cardBrickWrap" style="display:none;">
+      <div class="field" id="cardInstallmentsBox" style="display:none;">
+        <label>Parcelas</label>
+        <select id="cardInstallments"></select>
+        <div class="hint" id="cardInstallmentsHint" style="margin-top:6px;"></div>
+      </div>
+      <div id="cardPaymentBrick_container"></div>
+    </div>
     <div id="cardThreeDSWrap" style="display:none;"></div>
     <div class="hint" id="cardMsg" style="margin:10px 0;"></div>
     <div class="modal-actions">
@@ -6573,22 +6580,59 @@ function startCardPolling(){
     }catch(e){ /* tenta de novo */ }
   }, 4000);
 }
+// ---- Parcelamento (só no pagamento da consulta completa) ----
+const MAX_CARD_INSTALLMENTS = 6;
+let parcelasSeq = 0;
+function resetParcelas(msg){
+  const sel = document.getElementById('cardInstallments'), hint = document.getElementById('cardInstallmentsHint');
+  if(!sel) return;
+  sel.innerHTML = '<option value="1">À vista (1x)</option>';
+  sel.value = '1'; sel.disabled = true;
+  hint.textContent = msg || 'As parcelas aparecem depois que você digitar o número do cartão.';
+}
+async function carregarParcelas(bin, valor){
+  const sel = document.getElementById('cardInstallments'), hint = document.getElementById('cardInstallmentsHint');
+  const minhaVez = ++parcelasSeq;
+  if(!bin || String(bin).length < 6){ resetParcelas(); return; }
+  try{
+    const r = await mpInstance.getInstallments({ amount: String(Number(valor)), bin: String(bin) });
+    if(minhaVez !== parcelasSeq) return;   // chegou resposta de um número que já foi trocado
+    const custos = ((r && r[0] && r[0].payer_costs) || []).filter(p => p.installments >= 1 && p.installments <= MAX_CARD_INSTALLMENTS);
+    if(custos.length <= 1){ resetParcelas('Este cartão só permite pagamento à vista neste valor.'); return; }
+    sel.innerHTML = custos.map(p=>{
+      const n = p.installments, total = p.total_amount, parcela = p.installment_amount;
+      const rotulo = n === 1
+        ? `À vista (1x) — ${fmtMoneyPublic(total)}`
+        : `${n}x de ${fmtMoneyPublic(parcela)}` + (Number(p.installment_rate) > 0 ? ` — total ${fmtMoneyPublic(total)}` : ' sem juros');
+      return `<option value="${n}">${rotulo}</option>`;
+    }).join('');
+    sel.value = '1'; sel.disabled = false;
+    hint.textContent = 'Escolha em quantas vezes quer pagar.';
+  }catch(e){
+    console.error('Falha ao buscar parcelas:', e);
+    if(minhaVez === parcelasSeq) resetParcelas('Não foi possível carregar as parcelas; o pagamento será à vista.');
+  }
+}
 async function renderCardBrick(email){
   const c = payChoice;
   // O Brick não traz seletor crédito/débito: a escolha é feita antes e o Brick é aberto só com o tipo escolhido.
   const tipoCartao = (CARD_DEBIT_ENABLED && document.getElementById('cardType').value === 'debit_card') ? 'debit_card' : 'credit_card';
   const ehDebito = tipoCartao === 'debit_card';
+  const podeParcelar = !ehDebito && c.type === 'total';   // parcelas só na consulta completa, só no crédito
+  parcelasSeq++;
+  resetParcelas();
+  document.getElementById('cardInstallmentsBox').style.display = podeParcelar ? '' : 'none';
   if(!mpInstance) mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
   cardBrick = await mpInstance.bricks().create('cardPayment', 'cardPaymentBrick_container', {
     initialization: { amount: Number(c.value), payer: { email } },
     customization: { paymentMethods: {
       minInstallments: 1,
-      maxInstallments: (ehDebito || c.type !== 'total') ? 1 : 6,   // parcelas só quando paga a consulta completa
+      maxInstallments: 1,   // a escolha de parcelas é feita no nosso seletor (cardInstallments), que ajusta formData.installments no envio
       types: { excluded: ehDebito ? ['credit_card', 'prepaid_card'] : ['debit_card'] }
     } },
     callbacks: {
       onReady: ()=>{ console.log('[Card Brick] pronto | chave:', MP_PUBLIC_KEY, '| valor:', c.value); },
-      onBinChange: (bin)=>{ console.log('[Card Brick] BIN digitado:', bin); },
+      onBinChange: (bin)=>{ console.log('[Card Brick] BIN digitado:', bin); if(podeParcelar) carregarParcelas(bin, c.value); },
       onError: (err)=>{
         let det = '';
         try{ det = JSON.stringify(err, Object.getOwnPropertyNames(err || {}), 2); }catch(_){ det = String(err); }
@@ -6610,6 +6654,8 @@ async function renderCardBrick(email){
         cardMsg('Erro no formulário do cartão' + (causa ? ' (' + (Array.isArray(causa) ? causa.join(', ') : causa) + ')' : '') + '. Veja o console (F12).', true);
       },
       onSubmit: async (formData)=>{
+        // Parcelas escolhidas no nosso seletor (o servidor só aceita mais de 1x no pagamento da consulta completa).
+        formData.installments = podeParcelar ? (Number(document.getElementById('cardInstallments').value) || 1) : 1;
         cardMsg('Processando pagamento...');
         let result = {};
         try{
