@@ -2782,6 +2782,7 @@ let editingApptId = null;
 let editingPatientId = null;
 let apptType = 'agendamento';
 let publicMode = false;
+let currentPanelName = 'agenda'; // aba principal aberta (usada pelo histórico voltar/avançar)
 let loggedPatientId = null; // ficha do paciente NO PROFISSIONAL escolhido (derivada, ver ensurePatientFicha)
 let loggedPublicPatientId = null; // login único do paciente pra clínica toda
 let selectedPublicDate = null;
@@ -3245,12 +3246,16 @@ function setPublicMode(on){
   if(on){
     if(currentRole){ currentRole = null; switchToAnonymousSupabaseSession(); }
     document.getElementById('adminClinicTabs').style.display = 'none';
+    currentPanelName = 'agenda';
+    historyClearPanel();
     renderPublicArea();
   } else {
     try{ extendPermanentAvailability(); }catch(e){ console.warn('Falha ao estender disponibilidade definitiva', e); }
     document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
     document.querySelector('nav.tabs button[data-panel="agenda"]').classList.add('active');
     document.getElementById('panel-agenda').classList.add('active');
+    currentPanelName = 'agenda';
+    historyMarkPanel('agenda', true);   // entrada inicial do histórico logado
     applyRoleUI();
     renderAdminClinicTabs();
     renderAgenda();
@@ -3626,19 +3631,57 @@ async function switchToAnonymousSupabaseSession(){
   }catch(e){ console.error('Falha ao trocar para sessão anônima', e); }
 }
 
-/* ---------- TABS (admin) ---------- */
+/* ---------- TABS (admin) + HISTÓRICO DO NAVEGADOR (voltar/avançar) ---------- */
+function panelAllowedForRole(name){
+  if(!document.getElementById('panel-'+name)) return false;
+  if(currentRole === 'admin') return true;
+  if(currentRole === 'receptionist' || currentRole === 'professional') return (name === 'agenda' || name === 'patients');
+  return false;
+}
+function showPanel(name){
+  currentPanelName = name;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.panel === name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  // A visibilidade das abas de clínica (1, 2, 3) é sempre decidida por
+  // renderAdminClinicTabs, com base no painel ativo — igual no primeiro
+  // acesso e depois de navegar entre abas, tanto para profissional
+  // quanto para recepção.
+  renderAdminClinicTabs();
+}
+function historyMarkPanel(name, replace){
+  try{
+    const st = { sc_panel: name };
+    const url = '#' + name;
+    if(replace) history.replaceState(st, '', url); else history.pushState(st, '', url);
+  }catch(e){ /* ambiente sem suporte a history (ex.: iframe restrito): segue sem histórico */ }
+}
+function historyClearPanel(){
+  try{
+    if(/^#(agenda|patients|availability|financeiro|settings)$/.test(location.hash)){
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }catch(e){}
+}
+
 document.querySelectorAll('nav.tabs button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-'+btn.dataset.panel).classList.add('active');
-    // A visibilidade das abas de clínica (1, 2, 3) é sempre decidida por
-    // renderAdminClinicTabs, com base no painel ativo — igual no primeiro
-    // acesso e depois de navegar entre abas, tanto para profissional
-    // quanto para recepção.
-    renderAdminClinicTabs();
+    const name = btn.dataset.panel;
+    if(name === currentPanelName) return;   // clicar na aba já aberta não cria entrada no histórico
+    showPanel(name);
+    historyMarkPanel(name, false);
   });
+});
+
+window.addEventListener('popstate', (e)=>{
+  if(publicMode || !currentRole) return;    // fora do login, o voltar/avançar não mexe no sistema
+  const name = e.state && e.state.sc_panel;
+  if(!name) return;
+  if(!panelAllowedForRole(name)){           // perfil sem acesso àquela aba: mantém onde está
+    historyMarkPanel(currentPanelName, true);
+    return;
+  }
+  showPanel(name);
 });
 
 /* ---------- ADMIN CLINIC TABS ---------- */
