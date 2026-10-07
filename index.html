@@ -1978,7 +1978,7 @@ span.prof-tag.removable{
     <div class="sub" id="payMethodHint"></div>
     <div class="modal-actions" style="flex-direction:column;gap:8px;margin-top:10px;">
       <button type="button" class="btn" id="payMethodPixBtn">Pix</button>
-      <button type="button" class="btn secondary" id="payMethodCardBtn">Cartão de crédito ou débito (até 6x)</button>
+      <button type="button" class="btn secondary" id="payMethodCardBtn">Cartão de crédito (até 6x)</button>
       <button type="button" class="btn secondary" id="payMethodBackBtn">Voltar</button>
     </div>
   </div>
@@ -1988,11 +1988,13 @@ span.prof-tag.removable{
     <div class="field" id="cardEmailWrap">
       <label>E-mail (obrigatório — enviaremos o comprovante)</label>
       <input type="email" id="cardEmail" placeholder="seuemail@exemplo.com" autocomplete="email">
+      <div id="cardTypeBox">
       <label style="margin-top:12px;">Pagar no</label>
       <select id="cardType">
         <option value="credit_card">Crédito (à vista ou em até 6x)</option>
         <option value="debit_card">Débito (à vista)</option>
       </select>
+      </div>
     </div>
     <div id="cardBrickWrap" style="display:none;"><div id="cardPaymentBrick_container"></div></div>
     <div id="cardThreeDSWrap" style="display:none;"></div>
@@ -6482,6 +6484,9 @@ function openPixChoiceModal(appt, signalInfo){
   document.getElementById('pixSignalOverlay').classList.add('active');
 }
 // ===== Pagamento com cartão (Card Payment Brick do Mercado Pago) =====
+// Débito desligado: o Mercado Pago só devolve meio de pagamento de CRÉDITO para os cartões testados.
+// Para religar, troque para true (aparece o campo "Pagar no" com Crédito/Débito).
+const CARD_DEBIT_ENABLED = false;
 const MP_PUBLIC_KEY = 'APP_USR-61f62780-9f85-4f2d-9f85-8096eb99f88b';
 let mpInstance = null, cardBrick = null, payChoice = null, cardPollTimer = null;
 function showPayView(id){
@@ -6506,6 +6511,7 @@ function openPayMethod(appt, signalInfo, type){
   document.getElementById('payMethodPixBtn').onclick = ()=> startPixPayment(appt, signalInfo, type, appt.sinalReceivableId);
   const cardBtn = document.getElementById('payMethodCardBtn');
   cardBtn.style.display = isPatientSupabaseMode() ? '' : 'none';
+  cardBtn.textContent = type === 'total' ? 'Cartão de crédito (até 6x)' : 'Cartão de crédito (à vista)';
   cardBtn.onclick = ()=> openCardView();
   document.getElementById('payMethodBackBtn').onclick = ()=> openPixChoiceModal(appt, signalInfo);
   unmountCardBrick();
@@ -6514,9 +6520,14 @@ function openPayMethod(appt, signalInfo, type){
 }
 function openCardView(){
   unmountCardBrick();
-  document.getElementById('cardHint').textContent = `${fmtMoneyPublic(payChoice.value)} — crédito (à vista ou em até 6x) ou débito (à vista). O horário fica reservado por 1 hora desde o agendamento.`;
+  const podeParcelar = payChoice.type === 'total';   // parcelamento só no pagamento da consulta completa
+  const tipoTxt = CARD_DEBIT_ENABLED
+    ? (podeParcelar ? 'crédito (à vista ou em até 6x) ou débito (à vista).' : 'crédito ou débito, à vista.')
+    : (podeParcelar ? 'cartão de crédito, à vista ou em até 6x (escolha as parcelas no formulário).' : 'cartão de crédito, à vista. O parcelamento está disponível no pagamento da consulta completa.');
+  document.getElementById('cardHint').textContent = `${fmtMoneyPublic(payChoice.value)} — ${tipoTxt} O horário fica reservado por 1 hora desde o agendamento.`;
   document.getElementById('cardEmail').value = '';
   document.getElementById('cardType').value = 'credit_card';
+  document.getElementById('cardTypeBox').style.display = CARD_DEBIT_ENABLED ? '' : 'none';
   document.getElementById('cardEmailWrap').style.display = '';
   document.getElementById('cardContinueBtn').style.display = '';
   document.getElementById('cardBrickWrap').style.display = 'none';
@@ -6565,14 +6576,14 @@ function startCardPolling(){
 async function renderCardBrick(email){
   const c = payChoice;
   // O Brick não traz seletor crédito/débito: a escolha é feita antes e o Brick é aberto só com o tipo escolhido.
-  const tipoCartao = document.getElementById('cardType').value === 'debit_card' ? 'debit_card' : 'credit_card';
+  const tipoCartao = (CARD_DEBIT_ENABLED && document.getElementById('cardType').value === 'debit_card') ? 'debit_card' : 'credit_card';
   const ehDebito = tipoCartao === 'debit_card';
   if(!mpInstance) mpInstance = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
   cardBrick = await mpInstance.bricks().create('cardPayment', 'cardPaymentBrick_container', {
     initialization: { amount: Number(c.value), payer: { email } },
     customization: { paymentMethods: {
       minInstallments: 1,
-      maxInstallments: ehDebito ? 1 : 6,
+      maxInstallments: (ehDebito || c.type !== 'total') ? 1 : 6,   // parcelas só quando paga a consulta completa
       types: { excluded: ehDebito ? ['credit_card', 'prepaid_card'] : ['debit_card'] }
     } },
     callbacks: {
@@ -6590,7 +6601,9 @@ async function renderCardBrick(email){
           if(err.cause === 'missing_payment_information' || err.message === 'no_payment_method_for_provided_bin'){
             cardMsg(ehDebito
               ? 'Este cartão não está disponível para débito aqui. Volte e escolha Crédito, use outro cartão ou pague por Pix.'
-              : 'O Mercado Pago não reconheceu este cartão como crédito. Volte e tente Débito, use outro cartão ou pague por Pix.', true);
+              : (CARD_DEBIT_ENABLED
+                  ? 'O Mercado Pago não reconheceu este cartão como crédito. Volte e tente Débito, use outro cartão ou pague por Pix.'
+                  : 'Este cartão não é aceito como crédito aqui (cartões só de débito não funcionam). Use outro cartão de crédito ou pague por Pix.'), true);
           }
           return;
         }
@@ -6608,7 +6621,7 @@ async function renderCardBrick(email){
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              appointmentId: c.appt.id, valor: c.value, payerEmail: email, formData,
+              appointmentId: c.appt.id, valor: c.value, payerEmail: email, formData, paymentType: c.type,
               descricao: c.type === 'total' ? 'Pagamento integral da consulta' : 'Sinal de confirmação de consulta'
             })
           });
