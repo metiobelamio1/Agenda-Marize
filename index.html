@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>[MODELO/TESTE] Adrielle Dias · Fisioterapia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <!-- Biblioteca do Supabase (ativa): sem ela o sistema cai no modo local, sem banco. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -32,7 +32,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
-  font-family:'Nunito',sans-serif;
+  font-family:var(--sans);
   background: radial-gradient(circle at 50% -10%, #FDF6F2 0%, var(--sand) 55%);
   color:var(--ink);
   min-height:100vh;
@@ -47,21 +47,21 @@ header.top{
   flex-wrap:wrap;gap:16px;
 }
 .brand h1{
-  font-family:'Baloo 2',sans-serif;font-weight:600;font-size:2.1rem;
+  font-family:var(--serif);font-weight:600;font-size:2.1rem;
   color:var(--teal-deep);letter-spacing:-0.01em;line-height:1.05;
 }
 .brand .specialty{
-  font-family:'Nunito',sans-serif;font-size:0.78rem;
+  font-family:var(--sans);font-size:0.78rem;
   color:var(--sienna);text-transform:uppercase;letter-spacing:0.08em;
   margin-top:6px;
 }
 .head-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
 .today{
-  font-family:'Nunito',sans-serif;font-size:0.82rem;color:var(--ink-soft);
+  font-family:var(--sans);font-size:0.82rem;color:var(--ink-soft);
   text-align:right;text-transform:capitalize;
 }
 .mode-badge{
-  font-family:'Nunito',sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;
+  font-family:var(--sans);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;
   padding:5px 12px;border-radius:999px;cursor:pointer;border:1.5px solid var(--line);background:var(--white);color:var(--ink-soft);
 }
 .mode-badge:hover{border-color:var(--sienna);color:var(--sienna);}
@@ -98,7 +98,7 @@ header.top{
 }
 .alerts-badge{
   position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;
-  font-family:'Nunito',sans-serif;font-size:0.6rem;font-weight:700;
+  font-family:var(--sans);font-size:0.6rem;font-weight:700;
   min-width:15px;height:15px;border-radius:999px;display:flex;align-items:center;justify-content:center;
   padding:0 3px;line-height:1;box-shadow:0 0 0 2px var(--white);
 }
@@ -112,7 +112,7 @@ header.top{
   box-shadow:0 10px 30px rgba(37,50,47,0.16);z-index:80;overflow:hidden;text-align:left;
 }
 .alerts-panel-head{
-  font-family:'Baloo 2',sans-serif;font-size:0.92rem;color:var(--teal-deep);
+  font-family:var(--serif);font-size:0.92rem;color:var(--teal-deep);
   padding:11px 14px;border-bottom:1px solid var(--line);background:var(--sand-dim);
 }
 .alerts-panel-list{max-height:340px;overflow-y:auto;}
@@ -145,7 +145,7 @@ nav.tabs{
 }
 nav.tabs::-webkit-scrollbar{display:none;}
 nav.tabs button{
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.88rem;
+  font-family:var(--sans);font-weight:600;font-size:0.88rem;
   background:none;border:none;color:var(--ink-soft);
   padding:10px 18px;border-radius:999px;cursor:pointer;white-space:nowrap;flex:0 0 auto;
   transition:background .15s,color .15s;
@@ -158,7 +158,7 @@ nav.tabs button.active{background:var(--teal-deep);color:var(--white);}
   padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:var(--ink-soft);
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
 }
-.public-banner strong{font-family:'Baloo 2',sans-serif;font-size:1rem;display:block;color:var(--teal-deep);}
+.public-banner strong{font-family:var(--serif);font-size:1rem;display:block;color:var(--teal-deep);}
 .banner-specialty-switch{display:flex;align-items:center;gap:6px;}
 .banner-specialty-switch label{font-size:0.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);}
 .banner-specialty-switch select{
@@ -186,9 +186,9 @@ nav.tabs button.active{background:var(--teal-deep);color:var(--white);}
   -webkit-tap-highlight-color:transparent;
 }
 .week-nav button:hover{border-color:var(--teal-mid);}
-.week-label{font-family:'Baloo 2',sans-serif;font-size:1.15rem;color:var(--ink);text-transform:capitalize;}
+.week-label{font-family:var(--serif);font-size:1.15rem;color:var(--ink);text-transform:capitalize;}
 .week-nav .today-btn{
-  width:auto;border-radius:999px;padding:0 14px;font-family:'Nunito',sans-serif;
+  width:auto;border-radius:999px;padding:0 14px;font-family:var(--sans);
   font-size:0.75rem;height:34px;
 }
 .agenda-actions{display:flex;gap:8px;}
@@ -196,33 +196,33 @@ nav.tabs button.active{background:var(--teal-deep);color:var(--white);}
 .grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius);border:1px solid var(--line);background:var(--white);}
 table.agenda{border-collapse:collapse;width:100%;min-width:760px;}
 table.agenda th{
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.78rem;color:var(--ink-soft);
+  font-family:var(--sans);font-weight:600;font-size:0.78rem;color:var(--ink-soft);
   text-transform:uppercase;letter-spacing:0.05em;padding:10px 6px;
   border-bottom:2px solid var(--line);background:var(--sand-dim);text-align:center;
 }
 table.agenda th .dnum{
-  display:block;font-family:'Baloo 2',sans-serif;font-size:1.3rem;color:var(--teal-deep);
+  display:block;font-family:var(--serif);font-size:1.3rem;color:var(--teal-deep);
   font-weight:600;text-transform:none;margin-top:2px;
 }
 table.agenda th.today-col{background:#F8E8E3;}
 table.agenda th.prof-col .prof-name{
-  display:block;font-family:'Baloo 2',sans-serif;font-size:0.95rem;color:var(--teal-deep);
+  display:block;font-family:var(--serif);font-size:0.95rem;color:var(--teal-deep);
   font-weight:600;text-transform:none;margin-top:2px;white-space:normal;
 }
 table.agenda th.prof-col .prof-specialty{
-  display:block;font-family:'Nunito',sans-serif;font-size:0.62rem;color:var(--ink-soft);
+  display:block;font-family:var(--sans);font-size:0.62rem;color:var(--ink-soft);
   text-transform:none;letter-spacing:0;font-weight:600;margin-top:1px;white-space:normal;
 }
 .day-nav-single{display:flex;align-items:center;gap:10px;}
 .day-nav-single .day-label{
-  font-family:'Baloo 2',sans-serif;font-size:1.15rem;color:var(--ink);text-transform:capitalize;
+  font-family:var(--serif);font-size:1.15rem;color:var(--ink);text-transform:capitalize;
 }
 table.agenda td{
   border:1px solid var(--line);vertical-align:top;height:64px;width:13%;
   padding:4px;position:relative;
 }
 .timecell{
-  font-family:'Nunito',sans-serif;font-size:0.72rem;color:var(--ink-soft);
+  font-family:var(--sans);font-size:0.72rem;color:var(--ink-soft);
   text-align:right;padding-right:10px;white-space:nowrap;background:var(--sand-dim);
   border:1px solid var(--line);
 }
@@ -277,7 +277,7 @@ table.agenda td{
 .slot.empty::after{content:'+';color:var(--line);font-size:1.1rem;margin:auto;}
 .slot.empty:hover::after{color:var(--sienna);}
 .slot .pname{font-weight:700;font-size:0.78rem;line-height:1.15;color:var(--ink);}
-.slot .pstatus{font-family:'Nunito',sans-serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.03em;}
+.slot .pstatus{font-family:var(--sans);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.03em;}
 .slot.st-agendado{background:#F3D9D2;border-left:3px solid var(--teal-mid);}
 .slot.st-confirmado{background:#E7F0E4;border-left:3px solid #5F7A5B;}
 .slot.st-concluido{background:#DCEAD8;border-left:3px solid var(--sage);}
@@ -296,7 +296,7 @@ table.agenda td{
 
 /* BUTTONS */
 .btn{
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.85rem;
+  font-family:var(--sans);font-weight:600;font-size:0.85rem;
   padding:9px 18px;border-radius:8px;border:none;cursor:pointer;
   background:var(--teal-deep);color:var(--white);transition:background .15s;
 }
@@ -316,7 +316,7 @@ table.agenda td{
 .patients-list-head{display:flex;gap:8px;margin-bottom:12px;}
 .search-input{
   flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid var(--line);
-  font-family:'Nunito',sans-serif;font-size:16px;background:var(--white);
+  font-family:var(--sans);font-size:16px;background:var(--white);
 }
 .search-input:focus{outline:none;border-color:var(--teal-mid);}
 .patient-card{
@@ -326,7 +326,7 @@ table.agenda td{
 .patient-card:hover{border-color:var(--sienna-dim);}
 .patient-card.active{border-color:var(--teal-deep);background:#FBF1EC;}
 .patient-card .pn{font-weight:700;font-size:0.92rem;}
-.patient-card .pd{font-family:'Nunito',sans-serif;font-size:0.7rem;color:var(--ink-soft);margin-top:3px;}
+.patient-card .pd{font-family:var(--sans);font-size:0.7rem;color:var(--ink-soft);margin-top:3px;}
 .empty-note{color:var(--ink-soft);font-size:0.85rem;padding:14px 4px;}
 
 .detail-card{
@@ -334,7 +334,7 @@ table.agenda td{
   padding:26px 28px;box-shadow:var(--shadow);
 }
 .detail-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;}
-.detail-top h2{font-family:'Baloo 2',sans-serif;font-size:1.6rem;color:var(--teal-deep);}
+.detail-top h2{font-family:var(--serif);font-size:1.6rem;color:var(--teal-deep);}
 .detail-meta{display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 6px;font-size:0.85rem;color:var(--ink-soft);}
 .detail-meta div strong{display:block;color:var(--ink);font-weight:600;}
 
@@ -352,26 +352,26 @@ table.agenda td{
 .diagnosis-box .diagnosis-text{
   white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;word-break:break-word;
 }
-.diagnosis-box .lbl{font-family:'Nunito',sans-serif;font-size:0.68rem;text-transform:uppercase;
+.diagnosis-box .lbl{font-family:var(--sans);font-size:0.68rem;text-transform:uppercase;
   letter-spacing:0.06em;color:var(--sienna);display:block;margin-bottom:4px;}
 .diagnosis-box + .diagnosis-box{margin-top:-8px;}
-.diagnosis-box .diagnosis-tag{font-family:'Nunito',sans-serif;font-size:0.64rem;text-transform:uppercase;
+.diagnosis-box .diagnosis-tag{font-family:var(--sans);font-size:0.64rem;text-transform:uppercase;
   letter-spacing:0.05em;color:var(--ink-soft);display:block;margin-top:6px;}
 
 .history-title{
-  font-family:'Baloo 2',sans-serif;font-size:1.1rem;color:var(--ink);margin:22px 0 10px;
+  font-family:var(--serif);font-size:1.1rem;color:var(--ink);margin:22px 0 10px;
   display:flex;justify-content:space-between;align-items:center;
 }
 .session-row{
   display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--line);align-items:flex-start;
 }
 .session-row .sdate{
-  font-family:'Nunito',sans-serif;font-size:0.75rem;color:var(--ink-soft);
+  font-family:var(--sans);font-size:0.75rem;color:var(--ink-soft);
   min-width:90px;padding-top:2px;
 }
 .session-row .sbody{flex:1;}
 .session-row .stag{
-  font-family:'Nunito',sans-serif;font-size:0.65rem;text-transform:uppercase;
+  font-family:var(--sans);font-size:0.65rem;text-transform:uppercase;
   padding:2px 8px;border-radius:999px;letter-spacing:0.04em;display:inline-block;margin-bottom:4px;
 }
 .stag.st-agendado{background:#F3D9D2;color:var(--teal-deep);}
@@ -400,16 +400,16 @@ table.agenda td{
 .settings-form .toggle-field{margin-bottom:10px;}
 .stat-box{
   background:var(--sand-dim);border-radius:var(--radius);padding:14px 18px;
-  margin-bottom:18px;font-family:'Nunito',sans-serif;font-size:0.75rem;color:var(--ink-soft);
+  margin-bottom:18px;font-family:var(--sans);font-size:0.75rem;color:var(--ink-soft);
   text-transform:uppercase;letter-spacing:0.05em;
 }
 .stat-box strong{
-  display:block;font-family:'Baloo 2',sans-serif;font-size:1.4rem;color:var(--teal-deep);
+  display:block;font-family:var(--serif);font-size:1.4rem;color:var(--teal-deep);
   text-transform:none;letter-spacing:0;margin-top:4px;
 }
 .field{margin-bottom:18px;}
 .field.field-narrow{max-width:160px;}
-.field label{display:block;font-family:'Nunito',sans-serif;font-size:0.7rem;
+.field label{display:block;font-family:var(--sans);font-size:0.7rem;
   text-transform:uppercase;letter-spacing:0.05em;color:var(--sienna);margin-bottom:6px;}
 .clinic-card{
   background:var(--sand-dim);border:1px solid var(--line);border-radius:var(--radius);
@@ -417,7 +417,7 @@ table.agenda td{
 }
 .clinic-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;}
 .clinic-card-num{
-  font-family:'Nunito',sans-serif;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;
+  font-family:var(--sans);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;
   color:var(--sienna);
 }
 .settings-submit-row{
@@ -427,7 +427,7 @@ table.agenda td{
   border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:var(--sand);
 }
 .deleted-patient-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
-.deleted-patient-name{font-family:'Baloo 2',sans-serif;font-size:0.98rem;color:var(--ink);}
+.deleted-patient-name{font-family:var(--serif);font-size:0.98rem;color:var(--ink);}
 .deleted-patient-meta{font-size:0.78rem;color:var(--ink-soft);margin-top:2px;}
 .deleted-patient-detail{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:0.85rem;color:var(--ink);}
 .deleted-patient-detail div{margin-top:6px;}
@@ -436,7 +436,7 @@ table.agenda td{
 .deleted-appt-row:first-child{border-top:none;}
 .field input,.field select,.field textarea{
   width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);
-  font-family:'Nunito',sans-serif;font-size:16px;background:var(--sand);
+  font-family:var(--sans);font-size:16px;background:var(--sand);
 }
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal-mid);background:var(--white);}
 .pw-wrap{position:relative;}
@@ -526,8 +526,8 @@ table.agenda td{
 }
 /* Ficha de paciente (novo/editar): mais larga que os outros modais, sem ocupar a página toda */
 #patientOverlay .modal{max-width:760px;}
-.modal h3{font-family:'Baloo 2',sans-serif;font-size:1.3rem;color:var(--teal-deep);margin-bottom:4px;}
-.modal .sub{font-family:'Nunito',sans-serif;font-size:0.75rem;color:var(--ink-soft);margin-bottom:18px;}
+.modal h3{font-family:var(--serif);font-size:1.3rem;color:var(--teal-deep);margin-bottom:4px;}
+.modal .sub{font-family:var(--sans);font-size:0.75rem;color:var(--ink-soft);margin-bottom:18px;}
 .modal-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
 .status-choices{display:flex;gap:6px;flex-wrap:wrap;}
 .status-chip{
@@ -542,7 +542,7 @@ table.agenda td{
 .status-chip.sel-aguardando_pagamento.selected{background:#FBEAD1;border-color:var(--sienna);color:var(--sienna);}
 .hint{font-size:0.75rem;color:var(--ink-soft);margin-top:-10px;margin-bottom:16px;}
 .pix-countdown{background:#FBEAD1;border:1px solid var(--sienna);color:var(--sienna);border-radius:10px;padding:10px 12px;font-size:0.82rem;line-height:1.4;margin-bottom:14px;}
-.pix-countdown strong{font-family:'Baloo 2',sans-serif;font-size:1.15rem;letter-spacing:0.5px;}
+.pix-countdown strong{font-family:var(--serif);font-size:1.15rem;letter-spacing:0.5px;}
 .pix-countdown.expired{background:#F6E1DD;border-color:#B5473A;color:#8C2F23;}
 #blockDateReceptionHint{margin-top:6px;}
 .alert-box{display:flex;align-items:flex-start;gap:8px;font-size:0.8rem;line-height:1.4;color:#8a5a12;background:#FBEAD1;border:1px solid #D99B3F;border-radius:8px;padding:10px 12px;margin-top:-8px;margin-bottom:16px;}
@@ -551,7 +551,7 @@ table.agenda td{
 /* Tag usada para o rótulo "Para: nome" (agendamento feito para dependente) */
 .condition-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
 .condition-tag{
-  font-family:'Nunito',sans-serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.03em;
+  font-family:var(--sans);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.03em;
   background:#FBF1EC;color:var(--teal-deep);border:1px solid var(--sage);border-radius:999px;padding:3px 9px;
 }
 
@@ -574,7 +574,7 @@ table.agenda td{
 .type-toggle{display:flex;gap:6px;margin-bottom:18px;background:var(--sand-dim);padding:4px;border-radius:10px;}
 .type-toggle button{
   flex:1;padding:9px 10px;border:none;border-radius:8px;background:none;cursor:pointer;
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.8rem;color:var(--ink-soft);
+  font-family:var(--sans);font-weight:600;font-size:0.8rem;color:var(--ink-soft);
 }
 .type-toggle button.active{background:var(--white);color:var(--teal-deep);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 .type-toggle button.block-active.active{color:var(--gray);}
@@ -585,11 +585,11 @@ table.agenda td{
 .auth-tabs{display:flex;gap:6px;margin-bottom:20px;background:var(--sand-dim);padding:4px;border-radius:10px;}
 .auth-tabs button{
   flex:1;padding:11px;border:none;border-radius:8px;background:none;cursor:pointer;
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.85rem;color:var(--ink-soft);
+  font-family:var(--sans);font-weight:600;font-size:0.85rem;color:var(--ink-soft);
 }
 .auth-tabs button.active{background:var(--white);color:var(--teal-deep);box-shadow:0 1px 3px rgba(0,0,0,.08);}
 .auth-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:26px 26px;box-shadow:var(--shadow);}
-.auth-card h2{font-family:'Baloo 2',sans-serif;font-size:1.3rem;color:var(--teal-deep);margin-bottom:4px;}
+.auth-card h2{font-family:var(--serif);font-size:1.3rem;color:var(--teal-deep);margin-bottom:4px;}
 .auth-hint{font-size:0.78rem;color:var(--ink-soft);margin:2px 0 18px;line-height:1.45;}
 .auth-error{background:#FBDEDB;color:var(--red);padding:10px 12px;border-radius:8px;font-size:0.82rem;margin-bottom:14px;display:none;}
 .auth-error.show{display:block;}
@@ -597,11 +597,11 @@ table.agenda td{
 .auth-form-block.active{display:block;}
 
 .booking-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;flex-wrap:wrap;gap:16px;}
-.booking-header h2{font-family:'Baloo 2',sans-serif;font-size:1.55rem;color:var(--teal-deep);}
-.booking-header .sub{font-family:'Nunito',sans-serif;font-size:0.92rem;color:var(--ink-soft);margin-top:2px;}
+.booking-header h2{font-family:var(--serif);font-size:1.55rem;color:var(--teal-deep);}
+.booking-header .sub{font-family:var(--sans);font-size:0.92rem;color:var(--ink-soft);margin-top:2px;}
 
 .section-label{
-  font-family:'Nunito',sans-serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;
+  font-family:var(--sans);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;
   color:var(--sienna);margin-bottom:10px;display:block;
 }
 .day-chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;margin-bottom:36px;}
@@ -609,15 +609,15 @@ table.agenda td{
   flex:0 0 auto;min-width:64px;text-align:center;padding:10px 6px;border-radius:12px;border:1.5px solid var(--line);
   background:var(--white);cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
-.day-chip .dc-dow{font-family:'Nunito',sans-serif;font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);}
-.day-chip .dc-num{font-family:'Baloo 2',sans-serif;font-size:1.05rem;color:var(--ink);margin-top:2px;white-space:nowrap;}
+.day-chip .dc-dow{font-family:var(--sans);font-size:0.62rem;text-transform:uppercase;color:var(--ink-soft);}
+.day-chip .dc-num{font-family:var(--serif);font-size:1.05rem;color:var(--ink);margin-top:2px;white-space:nowrap;}
 .day-chip.selected{border-color:var(--teal-deep);background:#FBF1EC;}
 .day-chip.selected .dc-num{color:var(--teal-deep);}
 
 .slot-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:16px;margin-bottom:40px;}
 .slot-btn{
   padding:13px 8px;border-radius:8px;border:1.5px solid var(--teal-mid);background:var(--white);color:var(--teal-deep);
-  font-family:'Nunito',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;
+  font-family:var(--sans);font-weight:600;font-size:0.85rem;cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
 .slot-btn:hover{background:var(--teal-deep);color:var(--white);}
@@ -627,19 +627,19 @@ table.agenda td{
 .days-header .section-label{margin-bottom:0;}
 .future-date-inline{display:flex;align-items:center;gap:8px;}
 .future-date-inline label{
-  font-family:'Nunito',sans-serif;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;
+  font-family:var(--sans);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.05em;
   color:var(--sienna);white-space:nowrap;
 }
 .future-date-inline input#futureDateInput{
   padding:8px 10px;border-radius:8px;border:1.5px solid var(--line);
-  font-family:'Nunito',sans-serif;font-size:16px;background:var(--white);color:var(--ink);
+  font-family:var(--sans);font-size:16px;background:var(--white);color:var(--ink);
   width:132px;letter-spacing:0.03em;
 }
 .future-date-inline input#futureDateInput:focus{outline:none;border-color:var(--teal-mid);}
 .future-date-input-group{display:flex;align-items:center;gap:6px;}
 .future-date-calendar{
   padding:7px 4px;border-radius:8px;border:1.5px solid var(--line);
-  font-family:'Nunito',sans-serif;font-size:13px;background:var(--white);color:var(--ink);
+  font-family:var(--sans);font-size:13px;background:var(--white);color:var(--ink);
   width:36px;height:34px;cursor:pointer;color-scheme:light;
 }
 .future-date-calendar::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.75;}
@@ -647,7 +647,7 @@ table.agenda td{
 .future-date-calendar::-webkit-datetime-edit{opacity:0;}
 .future-date-calendar:focus{outline:none;border-color:var(--teal-mid);}
 .future-date-hint{
-  font-family:'Nunito',sans-serif;font-size:0.92rem;color:var(--ink-soft);
+  font-family:var(--sans);font-size:0.92rem;color:var(--ink-soft);
   margin:6px 0 30px;
 }
 .future-date-hint.error{color:var(--red);}
@@ -657,21 +657,21 @@ table.agenda td{
 }
 
 .my-appts-wrap{margin-top:28px;}
-.logout-link{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;text-decoration:underline;cursor:pointer;font-family:'Nunito',sans-serif;}
+.logout-link{background:none;border:none;color:var(--ink-soft);font-size:0.78rem;text-decoration:underline;cursor:pointer;font-family:var(--sans);}
 .clinic-pick-btn{
   display:flex;justify-content:space-between;align-items:center;
   background:var(--white);border:1.5px solid var(--line);border-radius:var(--radius);
   padding:16px 18px;cursor:pointer;text-align:left;width:100%;
-  font-family:'Nunito',sans-serif;transition:border-color .15s;
+  font-family:var(--sans);transition:border-color .15s;
 }
 .clinic-pick-btn:hover{border-color:var(--teal-mid);}
-.clinic-pick-btn .cpn{font-family:'Baloo 2',sans-serif;font-size:1.1rem;color:var(--teal-deep);}
-.clinic-pick-btn .cph{font-family:'Nunito',sans-serif;font-size:0.72rem;color:var(--ink-soft);}
+.clinic-pick-btn .cpn{font-family:var(--serif);font-size:1.1rem;color:var(--teal-deep);}
+.clinic-pick-btn .cph{font-family:var(--sans);font-size:0.72rem;color:var(--ink-soft);}
 
 /* CLINIC TABS (admin) */
 .clinic-tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
 .clinic-tabs button{
-  font-family:'Nunito',sans-serif;font-weight:500;font-size:0.78rem;
+  font-family:var(--sans);font-weight:500;font-size:0.78rem;
   background:var(--white);border:1.5px solid var(--line);color:var(--ink-soft);
   padding:8px 14px;border-radius:999px;cursor:pointer;transition:border-color .15s,color .15s;
 }
@@ -679,7 +679,7 @@ table.agenda td{
 .clinic-tabs button.active{background:var(--teal-deep);border-color:var(--teal-deep);color:var(--white);}
 .clinic-tabs button.tab-todas{font-weight:700;border-style:dashed;}
 .agenda-all-hint{font-size:0.82rem;color:var(--ink-soft);margin-bottom:12px;font-style:italic;}
-.slot .pclinic{font-family:'Nunito',sans-serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--teal-deep);opacity:0.85;}
+.slot .pclinic{font-family:var(--sans);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--teal-deep);opacity:0.85;}
 .slot.multi-appt{gap:6px;padding:5px 6px;}
 .slot.multi-appt .appt-row{border-radius:4px;padding:3px 5px;cursor:pointer;transition:filter .12s;}
 .slot.multi-appt .appt-row:hover{filter:brightness(0.97);}
@@ -700,7 +700,7 @@ table.agenda td{
   padding-bottom:11px;flex:0 0 auto;
 }
 .avail-range-summary{
-  font-family:'Nunito',sans-serif;font-size:0.8rem;color:var(--teal-deep);
+  font-family:var(--sans);font-size:0.8rem;color:var(--teal-deep);
   background:#F3D9D2;border:1px solid var(--teal-deep);border-radius:8px;
   padding:12px 14px;margin-top:10px;
   display:flex;flex-direction:column;gap:6px;
@@ -718,7 +718,7 @@ table.agenda td{
 .avail-form .hint{margin-top:8px;margin-bottom:20px;}
 .avail-form .toggle-field{margin-bottom:10px;}
 .avail-weekdays label{
-  font-family:'Nunito',sans-serif;font-size:0.74rem;color:var(--ink-soft);
+  font-family:var(--sans);font-size:0.74rem;color:var(--ink-soft);
   border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer;
   display:flex;align-items:center;gap:6px;
 }
@@ -732,7 +732,7 @@ table.agenda td{
   background:var(--white);border:1px solid var(--line);border-radius:8px;
   padding:10px 14px;margin-bottom:6px;
 }
-.avail-list-item .adate{font-family:'Nunito',sans-serif;font-size:0.82rem;color:var(--ink);}
+.avail-list-item .adate{font-family:var(--sans);font-size:0.82rem;color:var(--ink);}
 .avail-list-item .aclinic{font-size:0.8rem;font-weight:600;color:var(--teal-deep);}
 .toggle-field{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--ink);}
 .toggle-field input{width:17px;height:17px;accent-color:var(--teal-deep);cursor:pointer;}
@@ -741,7 +741,7 @@ table.agenda td{
   background:var(--white);border:1px solid var(--line);border-radius:8px;
   padding:8px 14px;margin-bottom:6px;font-size:0.84rem;
 }
-.weekday-owner-row .wname{font-family:'Nunito',sans-serif;color:var(--ink);width:70px;}
+.weekday-owner-row .wname{font-family:var(--sans);color:var(--ink);width:70px;}
 .weekday-owner-row .wclinic{color:var(--teal-deep);font-weight:600;flex:1;}
 .weekday-owner-row .wfree{color:var(--ink-soft);font-style:italic;flex:1;}
 .wclinic-chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;justify-content:flex-end;}
@@ -759,7 +759,7 @@ table.agenda td{
 button.prof-tag{
   background:var(--sand);color:var(--ink-soft);border:1.5px solid var(--line);border-radius:999px;
   padding:6px 12px;font-size:0.8rem;cursor:pointer;transition:border-color .15s,color .15s,background .15s;
-  font-family:'Nunito',sans-serif;
+  font-family:var(--sans);
 }
 button.prof-tag.selected{background:#FBF1EC;border-color:var(--teal-deep);color:var(--teal-deep);font-weight:600;display:inline-flex;align-items:center;gap:6px;}
 button.prof-tag .tag-x{font-size:0.95rem;line-height:1;}
@@ -806,19 +806,19 @@ span.prof-tag.removable{
 #panel-financeiro{
   padding:4px 20px 60px;
 }
-#panel-financeiro h1{font-family:'Baloo 2',sans-serif;font-weight:600;font-size:1.7rem;margin:0 0 4px;color:var(--ink);}
-#panel-financeiro .sub{font-family:'Nunito',sans-serif;font-size:0.8rem;color:var(--ink-soft);margin-bottom:26px;}
+#panel-financeiro h1{font-family:var(--serif);font-weight:600;font-size:1.7rem;margin:0 0 4px;color:var(--ink);}
+#panel-financeiro .sub{font-family:var(--sans);font-size:0.8rem;color:var(--ink-soft);margin-bottom:26px;}
 #panel-financeiro .wrap{max-width:1100px;margin:0 auto;}
 #panel-financeiro .section{
   background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
   box-shadow:var(--shadow);padding:20px 22px;margin-bottom:24px;
 }
 #panel-financeiro .section-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
-#panel-financeiro .section-title{font-family:'Baloo 2',sans-serif;font-size:1.15rem;font-weight:600;color:var(--teal-deep);}
+#panel-financeiro .section-title{font-family:var(--serif);font-size:1.15rem;font-weight:600;color:var(--teal-deep);}
 #panel-financeiro .filters{display:flex;gap:6px;background:var(--sand-dim);padding:4px;border-radius:999px;}
 #panel-financeiro .filters button{
   border:none;background:transparent;padding:6px 14px;border-radius:999px;font-size:0.76rem;
-  font-weight:600;color:var(--ink-soft);cursor:pointer;font-family:'Nunito',sans-serif;
+  font-weight:600;color:var(--ink-soft);cursor:pointer;font-family:var(--sans);
 }
 #panel-financeiro .filters button.active{background:var(--white);color:var(--teal-deep);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
 #panel-financeiro .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
@@ -828,15 +828,15 @@ span.prof-tag.removable{
 }
 #panel-financeiro .card:hover{border-color:var(--sage);}
 #panel-financeiro .card.active{background:var(--teal-deep);border-color:var(--teal-deep);}
-#panel-financeiro .card .clabel{font-family:'Nunito',sans-serif;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);}
+#panel-financeiro .card .clabel{font-family:var(--sans);font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);}
 #panel-financeiro .card.active .clabel{color:rgba(255,253,249,0.75);}
-#panel-financeiro .card .cvalue{font-family:'Baloo 2',sans-serif;font-size:1.35rem;font-weight:600;color:var(--ink);margin-top:4px;}
+#panel-financeiro .card .cvalue{font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--ink);margin-top:4px;}
 #panel-financeiro .card.active .cvalue{color:var(--white);}
-#panel-financeiro .card .ccount{font-family:'Nunito',sans-serif;font-size:0.68rem;color:var(--ink-soft);margin-top:2px;}
+#panel-financeiro .card .ccount{font-family:var(--sans);font-size:0.68rem;color:var(--ink-soft);margin-top:2px;}
 #panel-financeiro .card.active .ccount{color:rgba(255,253,249,0.65);}
 #panel-financeiro table{width:100%;border-collapse:collapse;font-size:0.84rem;}
 #panel-financeiro thead th{
-  text-align:left;font-family:'Nunito',sans-serif;font-size:0.66rem;text-transform:uppercase;
+  text-align:left;font-family:var(--sans);font-size:0.66rem;text-transform:uppercase;
   letter-spacing:0.05em;color:var(--ink-soft);padding:8px 10px;border-bottom:1.5px solid var(--line);
 }
 #panel-financeiro tbody td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
@@ -846,13 +846,13 @@ span.prof-tag.removable{
   background:var(--sand-dim);color:var(--teal-deep);
 }
 #panel-financeiro .tag.parcial{background:#FBEAD1;color:var(--sienna);}
-#panel-financeiro .val{font-family:'Nunito',sans-serif;font-weight:600;}
+#panel-financeiro .val{font-family:var(--sans);font-weight:600;}
 #panel-financeiro .val.neg{color:var(--red);}
 #panel-financeiro .val.pos{color:var(--green);}
 #panel-financeiro .empty-note{color:var(--ink-soft);font-size:0.84rem;padding:18px 4px;text-align:center;}
 #panel-financeiro .btn{
   border:none;background:var(--teal-deep);color:var(--white);padding:9px 16px;border-radius:8px;
-  font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;
+  font-size:0.8rem;font-weight:600;cursor:pointer;font-family:var(--sans);
 }
 #panel-financeiro .btn:hover{background:var(--teal-mid);}
 #panel-financeiro .btn.secondary{background:var(--white);color:var(--teal-deep);border:1.5px solid var(--line);}
@@ -875,14 +875,14 @@ span.prof-tag.removable{
   box-shadow:0 10px 40px rgba(0,0,0,0.2);
   max-height:calc(100vh - 32px);overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
-#panel-financeiro .modal h3{font-family:'Baloo 2',sans-serif;margin:0 0 4px;font-size:1.2rem;}
+#panel-financeiro .modal h3{font-family:var(--serif);margin:0 0 4px;font-size:1.2rem;}
 #panel-financeiro .modal .msub{font-size:0.8rem;color:var(--ink-soft);margin-bottom:16px;}
 #panel-financeiro .field{margin-bottom:12px;}
 #panel-financeiro .field label{display:block;font-size:0.76rem;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
 #panel-financeiro .field input,
 #panel-financeiro .field select{
   width:100%;padding:9px 10px;border-radius:8px;border:1.3px solid var(--line);
-  font-family:'Nunito',sans-serif;font-size:0.86rem;background:var(--white);color:var(--ink);
+  font-family:var(--sans);font-size:0.86rem;background:var(--white);color:var(--ink);
 }
 #panel-financeiro .field input:focus,
 #panel-financeiro .field select:focus{outline:none;border-color:var(--teal-mid);}
@@ -899,7 +899,7 @@ span.prof-tag.removable{
   display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-bottom:10px;
 }
 #panel-financeiro .clinic-block-name{
-  font-family:'Baloo 2',sans-serif;font-size:0.95rem;color:var(--teal-deep);
+  font-family:var(--serif);font-size:0.95rem;color:var(--teal-deep);
   flex:1 1 auto;min-width:0;overflow-wrap:anywhere;
 }
 #panel-financeiro .clinic-block-actions{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;}
@@ -909,7 +909,7 @@ span.prof-tag.removable{
 #panel-financeiro .feature-check input{margin-top:3px;flex-shrink:0;}
 #panel-financeiro .excel-columns-group{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;}
 #panel-financeiro .excel-columns-group:first-child{border-top:none;padding-top:0;margin-top:0;}
-#panel-financeiro .excel-columns-group-title{font-family:'Baloo 2',sans-serif;font-size:0.88rem;color:var(--teal-deep);}
+#panel-financeiro .excel-columns-group-title{font-family:var(--serif);font-size:0.88rem;color:var(--teal-deep);}
 @media (max-width:480px){
   #panel-financeiro .settings-modal .modal, #panel-financeiro .excel-modal .modal{padding:18px 16px;}
   #panel-financeiro .clinic-block-actions{width:100%;}
@@ -928,14 +928,14 @@ span.prof-tag.removable{
   max-height:85vh;overflow-y:auto;
 }
 #panel-financeiro .detail-sheet .handle{width:38px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 14px;}
-#panel-financeiro .detail-sheet h3{font-family:'Baloo 2',sans-serif;margin:0 0 12px;font-size:1.15rem;padding-right:26px;}
+#panel-financeiro .detail-sheet h3{font-family:var(--serif);margin:0 0 12px;font-size:1.15rem;padding-right:26px;}
 #panel-financeiro .detail-close{
   position:absolute;top:14px;right:16px;border:none;background:none;font-size:1.3rem;
   line-height:1;color:var(--ink-soft);cursor:pointer;padding:2px 6px;
 }
 #panel-financeiro .detail-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:0.86rem;}
 #panel-financeiro .detail-row:last-of-type{border-bottom:none;}
-#panel-financeiro .detail-row .dlabel{color:var(--ink-soft);font-size:0.68rem;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;}
+#panel-financeiro .detail-row .dlabel{color:var(--ink-soft);font-size:0.68rem;font-family:var(--sans);text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;}
 #panel-financeiro .detail-row .dvalue{font-weight:600;text-align:right;}
 #panel-financeiro .detail-actions{display:flex;flex-direction:column;gap:8px;margin-top:18px;}
 #panel-financeiro .detail-actions .btn{width:100%;}
@@ -982,7 +982,7 @@ span.prof-tag.removable{
   }
   #panel-financeiro tbody td:last-of-type{border-bottom:none;}
   #panel-financeiro tbody td::before{
-    content:attr(data-label);font-family:'Nunito',sans-serif;font-size:0.62rem;
+    content:attr(data-label);font-family:var(--sans);font-size:0.62rem;
     text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);flex-shrink:0;
     padding-top:2px;text-align:left;
   }
@@ -1005,6 +1005,256 @@ span.prof-tag.removable{
   #panel-financeiro .btn.export{width:100%;}
 }
 
+
+/* ===== TEMA "CLÍNICA" v35 — azul institucional, superfícies brancas, tipografia sóbria ===== */
+:root{
+  --teal-deep:#173F5F; --teal-mid:#2F6B96; --sage:#5F8F86;
+  --sand:#F3F6F9; --sand-dim:#E8EEF3;
+  --sienna:#2B7A78; --sienna-dim:#8DB9B6;
+  --ink:#16222E; --ink-soft:#586878; --line:#DAE2E9;
+  --red:#B3382F; --green:#2E7D5B; --gray:#6B7885; --white:#FFFFFF;
+  --timecol-bg:#EEF2F6; --radius:8px;
+  --shadow:0 1px 2px rgba(18,38,58,.05);
+  --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+:root body{font-family:var(--sans);color:var(--ink);background:var(--sand);font-size:15px;line-height:1.5;}
+:root h1,:root h2,:root h3,:root .brand h1,:root .modal h3,:root .auth-card h2,:root .booking-header h2,:root .detail-top h2{
+  font-family:var(--serif);font-weight:600;letter-spacing:-.01em;color:var(--teal-deep);}
+:root button:focus-visible,:root a:focus-visible,:root [tabindex]:focus-visible,:root input:focus-visible,:root select:focus-visible{
+  outline:2px solid var(--teal-mid);outline-offset:2px;}
+
+/* Cabeçalho */
+:root .app{max-width:1200px;padding:0 24px 64px;}
+:root header.top{background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;
+  padding:18px 26px;margin-bottom:26px;align-items:center;}
+:root .brand{display:grid;grid-template-columns:46px auto;column-gap:16px;align-items:center;}
+:root .brand::before{content:"";grid-row:1 / span 2;width:46px;height:46px;border-radius:10px;background:var(--teal-deep)
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 46'%3E%3Cpath d='M20 11h6v9h9v6h-9v9h-6v-9h-9v-6h9z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat;}
+:root .brand h1{font-size:1.55rem;line-height:1.15;}
+:root .brand .specialty{display:block;font-size:.84rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-soft);margin-top:2px;}
+:root .brand .specialty::before{content:none;}
+:root .today{font-size:.84rem;color:var(--ink-soft);}
+:root .mode-badge{border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--teal-deep);
+  font-size:.82rem;font-weight:500;text-transform:none;letter-spacing:0;padding:8px 14px;}
+:root .mode-badge:hover{border-color:var(--teal-mid);color:var(--teal-deep);background:var(--sand);}
+:root .alerts-bell{border:1px solid var(--line);background:#fff;border-radius:8px;color:var(--teal-deep);}
+:root .alerts-bell svg{width:19px;height:19px;display:block;}
+:root .alerts-bell.has-new{border-color:var(--teal-mid);}
+:root .alerts-panel{border-radius:10px;box-shadow:0 12px 32px -8px rgba(18,38,58,.22);}
+:root .alerts-panel-head{font-family:var(--sans);font-weight:600;background:var(--sand);}
+
+/* Abas */
+:root nav.tabs{gap:2px;margin:0 0 26px;border-bottom:1px solid var(--line);}
+:root nav.tabs button{font-family:var(--sans);font-weight:500;font-size:.93rem;color:var(--ink-soft);background:none;
+  border-radius:0;padding:12px 18px;border-bottom:2px solid transparent;margin-bottom:-1px;}
+:root nav.tabs button:hover{background:none;color:var(--teal-deep);}
+:root nav.tabs button.active{background:none;color:var(--teal-deep);font-weight:600;border-bottom-color:var(--teal-deep);}
+:root .clinic-tabs button{border-radius:6px;border:1px solid var(--line);font-size:.82rem;font-weight:500;padding:7px 14px;}
+:root .clinic-tabs button.active{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff;}
+:root .clinic-tabs button.tab-todas{border-style:solid;font-weight:600;}
+
+/* Superfícies */
+:root .detail-card,:root .settings-form,:root .auth-card,:root .patient-card,:root .clinic-pick-btn,:root .avail-form,:root .mini-cal,:root .deleted-patient-card{
+  background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);}
+:root .clinic-card,:root .stat-box,:root .diagnosis-box{background:var(--sand);border:1px solid var(--line);border-radius:8px;box-shadow:none;}
+:root .patient-card{box-shadow:none;transition:border-color .15s,background .15s;}
+:root .patient-card:hover,:root .clinic-pick-btn:hover{border-color:var(--teal-mid);}
+:root .patient-card.active{border-color:var(--teal-deep);background:#F0F5FA;box-shadow:inset 3px 0 0 var(--teal-deep);}
+:root .section-label,:root .history-title{font-family:var(--sans);font-size:.95rem;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);}
+:root .diagnosis-box .lbl,:root .diagnosis-box .diagnosis-tag,:root .clinic-card-num,:root .stat-box,:root .future-date-inline label,:root .banner-specialty-switch label{
+  text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:600;color:var(--ink-soft);}
+:root .stat-box strong{font-family:var(--serif);color:var(--teal-deep);}
+:root .detail-top h2{font-size:1.5rem;}
+
+/* Botões */
+:root .btn{font-family:var(--sans);font-weight:500;font-size:.9rem;border-radius:6px;padding:10px 18px;background:var(--teal-deep);color:#fff;
+  letter-spacing:0;box-shadow:none;transition:background .15s,border-color .15s;}
+:root .btn:hover{background:#0F2D46;}
+:root .btn.secondary,:root .btn.gray{background:#fff;color:var(--teal-deep);border:1px solid #BFCBD6;}
+:root .btn.secondary:hover,:root .btn.gray:hover{background:var(--sand);border-color:var(--teal-mid);}
+:root .btn.danger{background:#fff;color:var(--red);border:1px solid #E3C3BF;}
+:root .btn.danger:hover{background:var(--red);color:#fff;border-color:var(--red);}
+:root .btn.small{padding:7px 13px;font-size:.82rem;}
+:root .logout-link{color:var(--teal-mid);font-size:.85rem;}
+
+/* Campos */
+:root .field label,:root .field-label-row label{font-size:.82rem;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0;margin-bottom:6px;}
+:root input[type=text],:root input[type=password],:root input[type=email],:root input[type=tel],:root input[type=date],:root input[type=number],:root input[type=time],:root select,:root textarea,:root .search-input,
+:root .field input,:root .field select,:root .field textarea{
+  font-family:var(--sans);border:1px solid #C5D0DA;border-radius:6px;background:#fff;color:var(--ink);padding:10px 12px;transition:border-color .15s,box-shadow .15s;}
+:root input:focus,:root select:focus,:root textarea:focus,:root .search-input:focus,:root .field input:focus,:root .field select:focus,:root .field textarea:focus{
+  outline:none;border-color:var(--teal-mid);background:#fff;box-shadow:0 0 0 3px rgba(47,107,150,.16);}
+:root .hint,:root .auth-hint{color:var(--ink-soft);}
+:root .alert-box,:root .pix-countdown{background:#FFF6E3;border:1px solid #E6C77E;color:#6E4F0E;border-radius:6px;}
+:root .pix-countdown.expired{background:#FBEAE8;border-color:#D9A5A0;color:#8C2F27;}
+:root .auth-error{background:#FBEAE8;color:#8C2F27;border:1px solid #E3C3BF;border-radius:6px;}
+
+/* Janelas */
+:root .overlay,:root #panel-financeiro .overlay,:root #panel-financeiro .detail-overlay{background:rgba(15,35,52,.55);}
+:root .modal,:root #panel-financeiro .modal{border-radius:12px;box-shadow:0 24px 60px -18px rgba(15,35,52,.5);}
+:root .modal h3{font-size:1.35rem;}
+:root .type-toggle,:root .auth-tabs{background:var(--sand-dim);padding:4px;border-radius:8px;}
+:root .type-toggle button,:root .auth-tabs button{border-radius:6px;font-family:var(--sans);font-weight:500;color:var(--ink-soft);}
+:root .type-toggle button.active,:root .auth-tabs button.active{background:#fff;color:var(--teal-deep);font-weight:600;box-shadow:0 1px 2px rgba(18,38,58,.12);}
+
+/* Agenda */
+:root .grid-wrap{border-radius:10px;border:1px solid var(--line);box-shadow:var(--shadow);}
+:root .week-label,:root .day-nav-single .day-label{font-family:var(--serif);font-weight:600;color:var(--teal-deep);font-size:1.2rem;}
+:root .week-nav button{border-radius:6px;border:1px solid #C5D0DA;color:var(--teal-deep);}
+:root .week-nav button:hover{border-color:var(--teal-mid);background:var(--sand);}
+:root .week-nav .today-btn{border-radius:6px;}
+:root table.agenda{font-variant-numeric:tabular-nums;}
+:root table.agenda th{background:var(--sand);color:var(--ink-soft);font-size:.8rem;font-weight:600;letter-spacing:0;text-transform:none;
+  border-bottom:1px solid var(--line);padding:12px 6px;}
+:root table.agenda th .dnum{font-family:var(--sans);font-weight:600;font-size:1.25rem;color:var(--ink);}
+:root table.agenda th.today-col{background:#fff;color:var(--teal-deep);box-shadow:inset 0 3px 0 var(--teal-deep);}
+:root table.agenda th.today-col .dnum{color:var(--teal-deep);}
+:root table.agenda th.prof-col .prof-name{font-family:var(--sans);font-weight:600;color:var(--ink);}
+:root table.agenda td{border-color:#E6ECF1;}
+:root table.agenda td.timecell,:root table.agenda th:first-child{background:var(--timecol-bg);color:var(--ink-soft);font-weight:500;}
+:root table.agenda td.timecell{font-size:.88rem;}
+:root .slot{border-radius:5px;}
+:root .slot.empty{border:1px dashed #D3DCE4;}
+:root .slot.empty::after{color:#C5D0DA;}
+:root .slot.empty:hover{border-color:var(--teal-mid);background:#F0F5FA;}
+:root .slot.empty:hover::after{color:var(--teal-mid);}
+:root .slot .pstatus,:root .slot .pclinic{text-transform:none;letter-spacing:0;font-size:.7rem;font-weight:500;}
+:root .slot.na{background:repeating-linear-gradient(135deg,#F3F6F9 0 6px,#EAEFF4 6px 12px);}
+:root .slot.st-agendado,:root .slot.multi-appt .appt-row.st-agendado{background:#E6EFF7;}
+:root .slot.st-confirmado,:root .slot.multi-appt .appt-row.st-confirmado{background:#E3F1EA;}
+:root .slot.st-concluido,:root .slot.multi-appt .appt-row.st-concluido{background:#E9EDF1;}
+:root .slot.st-falta,:root .slot.multi-appt .appt-row.st-falta{background:#F9E7E5;}
+:root .slot.st-cancelado,:root .slot.multi-appt .appt-row.st-cancelado{background:#F0F2F4;}
+:root .slot.st-aguardando_pagamento{background:#FCF1D9;}
+:root .slot.st-bloqueado,:root .slot.multi-appt .appt-row.st-bloqueado{background:repeating-linear-gradient(135deg,#EEF1F4 0 6px,#E4E9ED 6px 12px);}
+:root .slot.st-agendado{border-left:3px solid #2F6B96;}
+:root .slot.st-confirmado{border-left:3px solid #2E7D5B;}
+:root .slot.st-concluido{border-left:3px solid #7A8B9A;}
+:root .slot.st-falta{border-left:3px solid #B3382F;}
+:root .slot.st-cancelado{border-left:3px solid #A3AEB8;opacity:.75;}
+:root .slot.st-aguardando_pagamento{border-left:3px solid #C98B2F;}
+:root .slot.st-bloqueado{border-left:3px solid #8794A0;}
+:root .slot.multi-empty{background:var(--sand);}
+:root .stag,:root .session-row .stag{text-transform:none;letter-spacing:0;font-size:.75rem;font-weight:600;border-radius:4px;padding:2px 8px;}
+:root .stag.st-agendado{background:#E6EFF7;color:#1B4A70;}
+:root .stag.st-confirmado{background:#E3F1EA;color:#1F5C41;}
+:root .stag.st-concluido{background:#E9EDF1;color:#3F5163;}
+:root .stag.st-falta{background:#F9E7E5;color:#8C2F27;}
+:root .stag.st-cancelado{background:#F0F2F4;color:#586878;}
+:root .stag.st-aguardando_pagamento{background:#FCF1D9;color:#7A5114;}
+:root .status-chip{border:1px solid #C5D0DA;border-radius:6px;font-weight:500;}
+:root .status-chip.sel-agendado.selected{background:#E6EFF7;border-color:#2F6B96;color:#1B4A70;}
+:root .status-chip.sel-confirmado.selected{background:#E3F1EA;border-color:#2E7D5B;color:#1F5C41;}
+:root .status-chip.sel-concluido.selected{background:#E9EDF1;border-color:#7A8B9A;color:#3F5163;}
+:root .status-chip.sel-falta.selected{background:#F9E7E5;border-color:#B3382F;color:#8C2F27;}
+:root .status-chip.sel-cancelado.selected{background:#F0F2F4;border-color:#A3AEB8;color:#586878;}
+:root .status-chip.sel-aguardando_pagamento.selected{background:#FCF1D9;border-color:#C98B2F;color:#7A5114;}
+
+/* Etiquetas, chips e calendários */
+:root .condition-tag,:root span.prof-tag.removable,:root .wclinic-chip,:root button.prof-tag,:root button.prof-tag.selected{
+  text-transform:none;letter-spacing:0;border-radius:5px;font-size:.78rem;}
+:root .condition-tag,:root span.prof-tag.removable,:root .wclinic-chip,:root button.prof-tag.selected{background:#E6EFF7;color:#1B4A70;border:1px solid #C3D5E5;}
+:root button.prof-tag{background:#fff;border:1px solid #C5D0DA;color:var(--ink-soft);}
+:root button.prof-tag.selected{border-color:var(--teal-mid);}
+:root .avail-range-summary{background:#E6EFF7;border:1px solid #C3D5E5;color:#1B4A70;border-radius:6px;}
+:root .avail-weekdays label{border-radius:6px;border-color:#C5D0DA;}
+:root .avail-weekdays label.blocked{background:#F9E7E5;border-color:#E3C3BF;}
+:root .avail-perm-chip{background:#FCF1D9;border-color:#E6C77E;color:#7A5114;}
+:root .mini-cal-day{border-radius:5px;}
+:root .mini-cal-day.marked{background:var(--teal-deep);}
+:root .mini-cal-day.marked:hover{background:var(--teal-mid);}
+:root .mini-cal-day.today{box-shadow:inset 0 0 0 1.5px var(--sienna);}
+:root .hour-check{border-radius:6px;border-color:#C5D0DA;}
+:root .hour-check:has(input:checked){background:#E6EFF7;border-color:var(--teal-deep);color:var(--teal-deep);}
+:root .hour-check small{text-transform:none;letter-spacing:0;}
+:root .progress-stair .step.done{background:var(--teal-mid);}
+:root .progress-stair .step.next{background:var(--sienna-dim);}
+
+/* Financeiro */
+#panel-financeiro h1{font-family:var(--serif);font-weight:600;color:var(--teal-deep);}
+#panel-financeiro .section{border-radius:10px;box-shadow:var(--shadow);}
+#panel-financeiro .section-title{font-family:var(--sans);font-size:1.05rem;font-weight:600;color:var(--ink);}
+#panel-financeiro .filters{border-radius:8px;background:var(--sand-dim);}
+#panel-financeiro .filters button{border-radius:6px;font-weight:500;}
+#panel-financeiro .filters button.active{color:var(--teal-deep);font-weight:600;}
+#panel-financeiro .card{background:var(--sand);border:1px solid var(--line);border-radius:8px;}
+#panel-financeiro .card:hover{border-color:var(--teal-mid);}
+#panel-financeiro .card.active{background:var(--teal-deep);border-color:var(--teal-deep);}
+#panel-financeiro .card .clabel,#panel-financeiro thead th{text-transform:none;letter-spacing:0;font-size:.78rem;font-weight:600;}
+#panel-financeiro .card .cvalue{font-family:var(--sans);font-weight:600;font-variant-numeric:tabular-nums;font-size:1.35rem;}
+#panel-financeiro .card.active .clabel,#panel-financeiro .card.active .ccount{color:rgba(255,255,255,.8);}
+#panel-financeiro tbody td{font-variant-numeric:tabular-nums;}
+#panel-financeiro .tag{background:#E6EFF7;color:#1B4A70;border-radius:4px;}
+#panel-financeiro .tag.parcial{background:#FCF1D9;color:#7A5114;}
+#panel-financeiro .btn{background:var(--teal-deep);border-radius:6px;font-weight:500;}
+#panel-financeiro .btn:hover{background:#0F2D46;}
+#panel-financeiro .btn.secondary{background:#fff;color:var(--teal-deep);border:1px solid #BFCBD6;}
+#panel-financeiro .btn.secondary:hover{background:var(--sand);}
+#panel-financeiro .btn.danger{background:#fff;color:var(--red);border:1px solid #E3C3BF;}
+#panel-financeiro .btn.export{background:var(--sienna);}
+#panel-financeiro .btn.export:hover{background:#226462;}
+#panel-financeiro .field label{color:var(--ink);}
+#panel-financeiro .field input,#panel-financeiro .field select{border:1px solid #C5D0DA;border-radius:6px;font-family:var(--sans);}
+#panel-financeiro .modal h3,#panel-financeiro .clinic-block-name,#panel-financeiro .excel-columns-group-title,#panel-financeiro .detail-sheet h3{font-family:var(--sans);font-weight:600;}
+#panel-financeiro .detail-row .dlabel{text-transform:none;letter-spacing:0;font-size:.78rem;}
+
+/* Portal do paciente */
+:root #publicArea{padding-top:6px;}
+:root .exit-public-btn{top:14px;right:18px;}
+:root .public-banner{display:flex;border:0;border-radius:12px;padding:38px 40px;margin-bottom:28px;color:#DCE7F0;
+  background:linear-gradient(120deg,#102F49 0%,#173F5F 60%,#1E5278 100%);box-shadow:none;position:relative;overflow:hidden;}
+:root .public-banner::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 0 0 40px rgba(255,255,255,.03);pointer-events:none;}
+:root .public-banner strong{font-family:var(--serif);font-weight:600;font-size:2rem;line-height:1.2;letter-spacing:-.01em;color:#fff;margin-bottom:8px;}
+:root .public-banner span{color:#C4D4E2;font-size:1rem;line-height:1.55;max-width:56ch;}
+:root .banner-specialty-switch label{color:#C4D4E2;}
+:root .banner-specialty-switch select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;}
+:root .banner-specialty-switch select option{color:var(--ink);}
+:root .auth-wrap{max-width:480px;}
+:root .auth-card{padding:32px;}
+:root .auth-card h2{font-size:1.5rem;margin-bottom:6px;}
+:root .clinic-pick-btn{padding:18px 20px;border-radius:8px;box-shadow:none;}
+:root .clinic-pick-btn .cpn{font-family:var(--sans);font-weight:600;color:var(--ink);font-size:1.02rem;}
+:root .booking-header h2{font-size:1.9rem;}
+:root .day-chip{border:1px solid #C5D0DA;border-radius:8px;min-width:68px;padding:11px 8px;transition:border-color .15s,background .15s;}
+:root .day-chip .dc-dow{text-transform:none;font-size:.78rem;}
+:root .day-chip .dc-num{font-family:var(--sans);font-weight:600;}
+:root .day-chip:hover{border-color:var(--teal-mid);}
+:root .day-chip.selected{background:var(--teal-deep);border-color:var(--teal-deep);box-shadow:none;}
+:root .day-chip.selected *{color:#fff;}
+:root .slot-list{gap:10px;}
+:root .slot-btn{border:1px solid #C5D0DA;border-radius:6px;background:#fff;color:var(--teal-deep);font-weight:600;font-size:.95rem;
+  padding:13px 8px;font-variant-numeric:tabular-nums;transition:border-color .15s,background .15s,color .15s;}
+:root .slot-btn:hover{border-color:var(--teal-deep);background:var(--teal-deep);color:#fff;box-shadow:none;}
+:root .session-row{border-color:var(--line);}
+
+/* Celular */
+@media (max-width:720px){
+:root .app{padding:0 12px 48px;}
+:root header.top{padding:14px 16px;margin-bottom:18px;border-radius:0 0 8px 8px;}
+:root .brand{grid-template-columns:38px auto;column-gap:12px;}
+:root .brand::before{width:38px;height:38px;}
+:root .brand h1{font-size:1.25rem;}
+:root nav.tabs{margin:0 -12px 20px;padding:0 8px;}
+:root nav.tabs button{padding:12px 12px;font-size:.88rem;}
+:root .public-banner{padding:26px 22px;border-radius:10px;}
+:root .public-banner strong{font-size:1.5rem;}
+:root .auth-card,:root .detail-card,:root .settings-form{padding:22px 18px;}
+:root .booking-header h2{font-size:1.55rem;}
+:root .btn{min-height:44px;}
+:root .slot-btn{min-height:48px;}
+:root .day-chip{min-width:62px;}
+:root input[type=text],:root input[type=password],:root input[type=email],:root input[type=tel],:root input[type=date],:root input[type=number],:root input[type=time],:root select,:root textarea{font-size:16px;}
+:root .modal{border-radius:12px;}
+}
+@media (prefers-reduced-motion:reduce){:root *{animation:none !important;transition:none !important;}}
+
+
+/* v36: fonte única (IBM Plex Sans) em todo o site + modal de agendamento da largura da ficha do paciente */
+:root{--serif:var(--sans);}
+:root *,:root button,:root input,:root select,:root textarea,:root table,:root th,:root td{font-family:var(--sans) !important;}
+#apptOverlay .modal{max-width:760px;}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -1019,7 +1269,7 @@ span.prof-tag.removable{
     <div class="head-right">
       <div class="alerts-wrap" id="alertsWrap" style="display:none;">
         <button type="button" class="alerts-bell" id="alertsBellBtn" title="Alertas" aria-label="Alertas">
-          <span class="alerts-bell-icon">🔔</span><span class="alerts-badge" id="alertsBadge" style="display:none;"></span>
+          <span class="alerts-bell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><span class="alerts-badge" id="alertsBadge" style="display:none;"></span>
         </button>
         <div class="alerts-panel" id="alertsPanel" style="display:none;">
           <div class="alerts-panel-head">Alertas</div>
@@ -1240,9 +1490,9 @@ span.prof-tag.removable{
   <h1>Financeiro</h1>
   <div class="sub">Modelo de controle financeiro · a receber · recebido · despesas</div>
   <div style="margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-    <button class="btn export" id="exportAllBtn">⭳ Exportar tudo para Excel</button>
-    <button class="btn secondary" id="exportLivroCaixaBtn">⭳ Livro caixa (Excel)</button>
-    <button class="btn secondary" id="openSettingsBtn" style="margin-left:auto;">⚙ Configurações</button>
+    <button class="btn export" id="exportAllBtn">Exportar tudo para Excel</button>
+    <button class="btn secondary" id="exportLivroCaixaBtn">Livro caixa (Excel)</button>
+    <button class="btn secondary" id="openSettingsBtn" style="margin-left:auto;">Configurações</button>
   </div>
 
   <!-- BACKUP -->
@@ -1252,9 +1502,9 @@ span.prof-tag.removable{
     </div>
     <div class="sub" style="margin-bottom:14px;" id="backupInfo">Nenhum backup feito ainda.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <button class="btn" id="backupNowBtn">⭳ Baixar backup agora (.json)</button>
+      <button class="btn" id="backupNowBtn">Baixar backup agora (.json)</button>
       <label class="btn secondary">
-        ⬆ Restaurar backup
+        Restaurar backup
         <input type="file" id="restoreBackupInput" accept="application/json" style="display:none;">
       </label>
     </div>
@@ -1282,7 +1532,7 @@ span.prof-tag.removable{
     </table>
     <div style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <button class="btn" id="newReceivableBtn">+ Nova conta a receber</button>
-      <button class="btn export small" id="exportReceivableBtn">⭳ Exportar Excel</button>
+      <button class="btn export small" id="exportReceivableBtn">Exportar Excel</button>
     </div>
   </div>
 
@@ -1303,7 +1553,7 @@ span.prof-tag.removable{
       <thead><tr><th>Recebido em</th><th>Profissional</th><th>Descrição</th><th>Valor</th></tr></thead>
       <tbody id="receivedTable"></tbody>
     </table>
-    <div class="section-export"><button class="btn export small" id="exportReceivedBtn">⭳ Exportar Excel</button></div>
+    <div class="section-export"><button class="btn export small" id="exportReceivedBtn">Exportar Excel</button></div>
   </div>
 
   <!-- DESPESAS -->
@@ -1325,7 +1575,7 @@ span.prof-tag.removable{
     </table>
     <div style="margin-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
       <button class="btn" id="newExpenseBtn">+ Nova despesa</button>
-      <button class="btn export small" id="exportExpenseBtn">⭳ Exportar Excel</button>
+      <button class="btn export small" id="exportExpenseBtn">Exportar Excel</button>
     </div>
   </div>
 
@@ -2015,7 +2265,7 @@ span.prof-tag.removable{
     <h3>Pague para confirmar</h3>
     <div class="sub" id="pixSignalHint"></div>
     <div class="field" style="text-align:center;">
-      <div style="font-family:'Baloo 2',sans-serif;font-size:1.6rem;font-weight:600;margin:10px 0;" id="pixSignalValue">R$ 0,00</div>
+      <div style="font-family:'Fraunces',Georgia,serif;font-size:1.6rem;font-weight:600;margin:10px 0;" id="pixSignalValue">R$ 0,00</div>
       <div class="pix-countdown" id="pixCountdown" style="display:none;"></div>
       <div id="pixQrWrap" style="border:1.5px dashed var(--line);border-radius:12px;padding:16px;color:var(--ink-soft);font-size:0.82rem;margin-bottom:14px;">
         Gerando QR code Pix...
@@ -2273,7 +2523,31 @@ function sendSystemEmail(type, data){
     method: 'POST',
     headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${PAYMENT_ANON_KEY}`},
     body: JSON.stringify({type, data})
+  }).then(async resp=>{
+    // Antes só erro de rede aparecia; respostas 401/403/502 (Resend recusou, chave errada etc.) passavam em silêncio.
+    if(!resp.ok){
+      let body = ''; try{ body = await resp.text(); }catch(e){}
+      console.error('E-mail de notificação NÃO enviado (' + type + ') — HTTP ' + resp.status, body);
+    }
   }).catch(err=> console.warn('Falha ao enviar e-mail de notificação (' + type + '):', err));
+}
+// Avisa a clínica por e-mail quando um agendamento é cancelado.
+// previousStatus 'aguardando_pagamento' = tentativa de agendamento (nunca foi confirmada);
+// qualquer outro status anterior = agendamento que já valia.
+// cancelledBy: 'paciente' | 'clinica' | 'expirado'
+function notifyCancellation(appt, cancelledBy, previousStatus){
+  if(!appt || !previousStatus || previousStatus === 'cancelado' || previousStatus === 'bloqueado') return;
+  const wasAttempt = previousStatus === 'aguardando_pagamento';
+  const pat = DATA.patients.find(p=>p.id===appt.patientId);
+  const clinic = getClinic(appt.clinicId);
+  sendSystemEmail(wasAttempt ? 'booking_attempt_cancelled' : 'appointment_cancelled', {
+    patientName: pat ? pat.name : '',
+    professionalName: clinic ? clinic.name : '',
+    professionalSpecialty: clinic ? (clinic.specialty || '') : '',
+    date: isoToDisplay(appt.date), hour: appt.hour,
+    cancelledBy,
+    signalPaid: !!appt.sinalPago
+  });
 }
 
 function patientToRow(p){
@@ -4315,11 +4589,39 @@ document.getElementById('apptManualPayBtn').addEventListener('click', ()=>{
 });
 document.getElementById('apptDeleteBtn').addEventListener('click', ()=>{
   if(!editingApptId) return;
-  DATA.appointments = DATA.appointments.filter(a=>a.id!==editingApptId);
+  const a = DATA.appointments.find(x=>x.id===editingApptId);
+  if(!a) return;
+  const closeAndRefresh = ()=>{
+    document.getElementById('apptOverlay').classList.remove('active');
+    renderAgenda(); renderPatientDetail();
+  };
+  // Bloqueio de horário não é agendamento: exclui direto, como antes.
+  // Agendamento já cancelado: só confirma a exclusão.
+  // Qualquer outro status: precisa cancelar antes (e o e-mail de cancelamento é enviado).
+  if(a.status !== 'bloqueado' && a.status !== 'cancelado'){
+    if(!confirm('Para excluir um agendamento, ele precisa ser cancelado primeiro.\n\nDeseja cancelar este agendamento agora?')) return;
+    const prevStatus = a.status;
+    a.status = 'cancelado';
+    // Mesmo desfazer do Financeiro que existe ao trocar o status de "Concluído" no formulário
+    if(prevStatus === 'concluido' && a.financeiroReceivableId && window.FinanceiroAPI &&
+       window.FinanceiroAPI.desfazerConsultaConcluida(a.financeiroReceivableId)){
+      delete a.financeiroReceivableId;
+    }
+    notifyCancellation(a, 'clinica', prevStatus);
+    syncAppointmentToSupabase(a);
+    saveData();
+    renderAgenda(); renderPatientDetail();
+    if(!confirm('Agendamento cancelado.\n\nDeseja excluir este agendamento definitivamente?')){
+      closeAndRefresh();   // fica salvo como Cancelado
+      return;
+    }
+  } else if(a.status === 'cancelado'){
+    if(!confirm('Deseja excluir este agendamento definitivamente?')) return;
+  }
+  DATA.appointments = DATA.appointments.filter(x=>x.id!==editingApptId);
   deleteAppointmentFromSupabase(editingApptId);
   saveData();
-  document.getElementById('apptOverlay').classList.remove('active');
-  renderAgenda(); renderPatientDetail();
+  closeAndRefresh();
 });
 document.getElementById('apptForm').addEventListener('submit', (e)=>{
   e.preventDefault();
@@ -4420,6 +4722,10 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
         date: isoToDisplay(date), hour
       });
     }
+    // Avisa por e-mail quando a clínica/recepção marca como Cancelado
+    if(status === 'cancelado' && previousStatus && previousStatus !== 'cancelado'){
+      notifyCancellation(apptRef, 'clinica', previousStatus);
+    }
     // Sincroniza o paciente só agora — depois de qualquer alteração feita
     // nele nesta mesma ação (incluindo o avanço da progressão), pra não
     // mandar pro Supabase uma versão desatualizada.
@@ -4513,12 +4819,12 @@ function renderPatientDetail(){
 
       ${isReceptionist ? '' : `
       <div>
-        <span class="lbl" style="font-family:'Nunito',sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sienna);">
+        <span class="lbl" style="font-family:'DM Sans',system-ui,sans-serif;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--sienna);">
           Sessões concluídas · ${completed}
         </span>
       </div>
 
-      <div class="history-title">Histórico de atendimentos <span style="font-family:'Nunito',sans-serif;font-size:0.7rem;color:var(--ink-soft);">${sessions.length} registro(s)</span></div>
+      <div class="history-title">Histórico de atendimentos <span style="font-family:'DM Sans',system-ui,sans-serif;font-size:0.7rem;color:var(--ink-soft);">${sessions.length} registro(s)</span></div>
       ${sessions.length ? sessions.map(s=>`
         <div class="session-row">
           <div class="sdate">${isoToDisplay(s.date)}<br>${s.hour}</div>
@@ -6917,7 +7223,9 @@ function finishPixPayment(appt, amountPaid){
 document.getElementById('pixChoiceCancelBtn').addEventListener('click', ()=>{
   if(!pendingPixAppt) return;
   if(!confirm('Cancelar este agendamento? O horário será liberado.')) return;
+  const prevPixStatus = pendingPixAppt.status;
   pendingPixAppt.status = 'cancelado';
+  notifyCancellation(pendingPixAppt, 'paciente', prevPixStatus);
   syncAppointmentToSupabase(pendingPixAppt);
   saveData();
   document.getElementById('pixSignalOverlay').classList.remove('active');
@@ -6939,7 +7247,9 @@ document.getElementById('pixSignalCancelBtn').addEventListener('click', async ()
   if(!confirm('Cancelar este agendamento? O horário será liberado.')) return;
   stopPixCountdown();
   if(pixPollTimer){ clearInterval(pixPollTimer); pixPollTimer = null; }
+  const prevPixStatus = pendingPixAppt.status;
   pendingPixAppt.status = 'cancelado';
+  notifyCancellation(pendingPixAppt, 'paciente', prevPixStatus);
   syncAppointmentToSupabase(pendingPixAppt);
   saveData();
   document.getElementById('pixSignalOverlay').classList.remove('active');
@@ -7022,7 +7332,7 @@ function renderMyAppts(){
     btn.addEventListener('click', ()=>{
       if(!confirm('Cancelar este agendamento?')) return;
       const a = DATA.appointments.find(x=>x.id===btn.dataset.cancel);
-      if(a){ a.status = 'cancelado'; syncAppointmentToSupabase(a); saveData(); renderBookingScreen(); }
+      if(a){ const prevStatus = a.status; a.status = 'cancelado'; notifyCancellation(a, 'paciente', prevStatus); syncAppointmentToSupabase(a); saveData(); renderBookingScreen(); }
     });
   });
 }
