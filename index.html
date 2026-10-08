@@ -1255,6 +1255,43 @@ span.prof-tag.removable{
 :root{--serif:var(--sans);}
 :root *,:root button,:root input,:root select,:root textarea,:root table,:root th,:root td{font-family:var(--sans) !important;}
 #apptOverlay .modal{max-width:760px;}
+
+/* ===== v37 — ajustes SÓ para celular ===== */
+#msgBox{display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,35,52,.55);align-items:center;justify-content:center;padding:24px;}
+#msgBox.open{display:flex;}
+#msgBox .msgbox-card{background:#fff;border-radius:12px;padding:22px 20px 16px;width:100%;max-width:340px;box-shadow:0 24px 60px -18px rgba(15,35,52,.5);}
+#msgBox .msgbox-text{white-space:pre-line;font-size:.95rem;line-height:1.5;color:var(--ink);margin-bottom:18px;}
+#msgBox .msgbox-ok{width:100%;}
+@media (max-width:720px){
+/* sino no canto superior direito */
+:root header.top{position:relative;padding-right:66px;}
+:root .alerts-wrap{position:absolute;top:12px;right:12px;z-index:60;}
+:root .alerts-bell{width:40px;height:40px;}
+:root .alerts-panel{width:min(320px,calc(100vw - 24px));max-width:none;}
+/* horário dentro da coluna */
+:root table.agenda th:first-child,:root table.agenda td.timecell{width:40px;min-width:40px;max-width:40px;overflow:hidden;}
+:root table.agenda td.timecell{font-size:.6rem;padding:4px 1px;font-weight:500;letter-spacing:-.02em;white-space:nowrap;text-align:center;}
+/* botões da agenda menores */
+:root .agenda-actions .btn{min-height:0;padding:7px 10px;font-size:.78rem;}
+/* ficha do paciente */
+:root .detail-top{display:block;position:relative;}
+:root .detail-top > div:last-child{position:absolute;top:0;right:0;}
+:root .detail-top h2{padding-right:76px;margin-bottom:2px;}
+:root .detail-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 6px;}
+:root .detail-meta div{display:flex;flex-direction:column-reverse;justify-content:flex-end;background:var(--sand);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0;font-size:.72rem;color:var(--ink-soft);overflow-wrap:anywhere;}
+:root .detail-meta div strong{font-size:.88rem;color:var(--ink);font-weight:600;}
+:root .detail-meta div:nth-child(n+4){grid-column:1 / -1;}
+/* disponibilidade: De / Até */
+:root .avail-form{padding:16px 14px;}
+:root .avail-range{gap:6px;}
+:root .avail-range .field{min-width:0;}
+:root .avail-range-arrow{flex:0 0 auto;font-size:.85rem;}
+:root .avail-range input[type=date]{font-size:14px;padding:8px 6px;min-width:0;width:100%;min-height:40px;}
+/* configurações: campos colados na margem esquerda */
+:root .settings-form .field-row{flex-direction:column;align-items:stretch !important;gap:0;}
+:root .settings-form .field,:root .settings-form .field.field-narrow{width:100%;max-width:none;align-self:stretch;}
+:root .settings-form input[type=text],:root .settings-form input[type=password]{text-align:left;width:100%;}
+}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -2392,6 +2429,37 @@ span.prof-tag.removable{
   </div>
 </div>
 
+<script>
+/* v37: caixa de mensagem no celular — um toque em OK fecha; mensagens repetidas são unificadas */
+(function(){
+  var nativeAlert=window.alert.bind(window), mq=window.matchMedia('(max-width:720px)');
+  var queue=[], box=null, okBtn=null, txt=null, shownAt=0, current='';
+  function build(){
+    box=document.createElement('div'); box.id='msgBox';
+    box.innerHTML='<div class="msgbox-card" role="alertdialog" aria-modal="true"><div class="msgbox-text"></div><button type="button" class="btn msgbox-ok">OK</button></div>';
+    document.body.appendChild(box);
+    txt=box.querySelector('.msgbox-text'); okBtn=box.querySelector('.msgbox-ok');
+    okBtn.addEventListener('click',function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(Date.now()-shownAt<400) return;
+      box.classList.remove('open'); current=''; setTimeout(next,60);
+    });
+    ['click','touchend','pointerup','mouseup'].forEach(function(ev){box.addEventListener(ev,function(e){e.stopPropagation();});});
+  }
+  function next(){
+    if(!queue.length) return;
+    if(!box) build();
+    current=queue.shift(); txt.textContent=current; shownAt=Date.now(); box.classList.add('open');
+  }
+  window.alert=function(msg){
+    if(!mq.matches){ return nativeAlert(msg); }
+    msg=String(msg==null?'':msg);
+    if(msg===current || queue.indexOf(msg)>-1) return;
+    queue.push(msg);
+    if(!current) next();
+  };
+})();
+</script>
 <script>
 const STORE_KEY = 'physio-app-data-MODELO'; // MODELO: chave separada da produção ('physio-app-data') de propósito
 const SESSION_KEY = 'physio-app-patient-session-MODELO'; // idem, pra nunca ler sessão/dados salvos do app real
