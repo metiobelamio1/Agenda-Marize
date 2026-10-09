@@ -1413,6 +1413,20 @@ body.staff-header .alerts-bell.has-new{border-color:#fff;animation-name:alertsBe
 body.staff-header .alerts-badge{outline-color:#173F5F;}
 body.staff-header .mode-badge{background:transparent;border-color:rgba(255,255,255,.55);color:#fff;}
 body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-color:#fff;color:#fff;}
+
+/* v46 — faixa de datas com setas azuis nas laterais (paginação) */
+.bk-strip{display:flex;align-items:center;gap:4px;margin:0 0 6px;}
+:root .bk-strip .day-chip-row,#publicBookingScreen .bk-strip .day-chip-row{flex:1;min-width:0;margin:0;padding:2px 0;}
+.bk-strip-arrow{flex:none;width:28px;height:56px;border:0;background:none;padding:0;cursor:pointer;color:#173F5F;
+  display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
+.bk-strip-arrow svg{width:26px;height:26px;display:block;}
+.bk-strip-arrow:hover{color:#2F6B96;}
+.bk-strip-arrow.is-hidden,.bk-month button.is-hidden{visibility:hidden;pointer-events:none;}
+@media (min-width:721px){ .bk-strip{gap:8px;} .bk-strip-arrow{width:36px;} .bk-strip-arrow svg{width:32px;height:32px;} }
+@media (max-width:600px){
+  #publicBookingScreen .bk-strip{margin-bottom:42px;}
+  .bk-strip-arrow{width:22px;} .bk-strip-arrow svg{width:22px;height:22px;}
+}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -2107,7 +2121,11 @@ body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-colo
           <span class="section-label">Escolha o dia</span>
           <span class="bk-month"><button type="button" id="bkPrevDays" aria-label="Dias anteriores">&lsaquo;</button><span id="bkMonth"></span><button type="button" id="bkNextDays" aria-label="Próximos dias">&rsaquo;</button></span>
         </div>
-        <div class="day-chip-row" id="dayChipRow"></div>
+        <div class="bk-strip">
+          <button type="button" class="bk-strip-arrow" id="bkStripPrev" aria-label="Datas anteriores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4l-8 8 8 8"/></svg></button>
+          <div class="day-chip-row" id="dayChipRow"></div>
+          <button type="button" class="bk-strip-arrow" id="bkStripNext" aria-label="Próximas datas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l8 8-8 8"/></svg></button>
+        </div>
         <div class="future-date-inline">
           <label for="futureDateInput">Escolher outra data</label>
           <div class="future-date-input-group">
@@ -6740,7 +6758,7 @@ const BK_MON = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov
 function bkCap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
 function fmtShortDay(iso){ const d = parseIso(iso); return bkCap(BK_DOW[d.getDay()]) + ', ' + d.getDate() + ' ' + BK_MON[d.getMonth()]; }
 function longDayLabel(d){ return bkCap(d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})); }
-function monthLabel(d){ return bkCap(d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(' de ',' ')); }
+function monthLabel(d){ return bkCap(d.toLocaleDateString('pt-BR',{month:'long'})); }
 function applyMyApptsState(){
   document.getElementById('myApptsWrap').classList.toggle('open', myApptsOpen);
   document.getElementById('myAppts').hidden = !myApptsOpen;
@@ -6774,8 +6792,52 @@ document.getElementById('bkNext').addEventListener('click', ()=>{
   myApptsTouched = true; myApptsOpen = true; applyMyApptsState();
   document.getElementById('myApptsWrap').scrollIntoView({behavior:'smooth', block:'center'});
 });
-document.getElementById('bkPrevDays').addEventListener('click', ()=>{ const r = document.getElementById('dayChipRow'); r.scrollBy({left:-r.clientWidth*0.85, behavior:'smooth'}); });
-document.getElementById('bkNextDays').addEventListener('click', ()=>{ const r = document.getElementById('dayChipRow'); r.scrollBy({left:r.clientWidth*0.85, behavior:'smooth'}); });
+/* Faixa de datas paginada: bkViewStart = primeira data exibida. */
+let bkViewStart = null;
+function bkPerPage(){ return window.matchMedia('(min-width:721px)').matches ? 10 : 7; }
+function bkToday(){ const t = new Date(); t.setHours(0,0,0,0); return t; }
+function bkGoTo(date){
+  if(!date) return;
+  bkViewStart = new Date(date);
+  selectedPublicDate = new Date(date);   // seleciona a primeira data da nova página
+  document.getElementById('futureDateInput').value = '';
+  renderBookingScreen();
+}
+// Primeira data com atendimento do mês anterior (dir=-1) ou seguinte (dir=1) ao mês exibido.
+// Nunca volta para antes de hoje.
+function bkMonthTarget(dir){
+  if(!bkViewStart) return null;
+  const today = bkToday();
+  const base = new Date(bkViewStart.getFullYear(), bkViewStart.getMonth(), 1);
+  for(let i=1; i<=24; i++){
+    const m = new Date(base.getFullYear(), base.getMonth()+dir*i, 1);
+    const last = new Date(m.getFullYear(), m.getMonth()+1, 0);
+    if(last < today) return null;                 // mês inteiro já passou
+    const from = (m < today) ? today : m;
+    const d = getNextValidDays(1, from, selectedPublicClinicId)[0];
+    if(d && d.getFullYear()===m.getFullYear() && d.getMonth()===m.getMonth()) return d;
+  }
+  return null;
+}
+document.getElementById('bkPrevDays').addEventListener('click', ()=>{ bkGoTo(bkMonthTarget(-1)); });
+document.getElementById('bkNextDays').addEventListener('click', ()=>{ bkGoTo(bkMonthTarget(1)); });
+// Setas laterais: pulam uma página inteira de datas com atendimento (10 no computador, 7 no celular).
+document.getElementById('bkStripNext').addEventListener('click', ()=>{
+  if(!bkViewStart) return;
+  const per = bkPerPage();
+  const list = getNextValidDays(per+1, bkViewStart, selectedPublicClinicId);
+  if(list.length > per) bkGoTo(list[per]);
+});
+document.getElementById('bkStripPrev').addEventListener('click', ()=>{
+  if(!bkViewStart) return;
+  const per = bkPerPage(), today = bkToday(), found = [];
+  let c = addDays(bkViewStart, -1);
+  while(c >= today && found.length < per){
+    if(isValidAttendanceDay(c, selectedPublicClinicId)) found.push(new Date(c));
+    c = addDays(c, -1);
+  }
+  if(found.length) bkGoTo(found[found.length-1]);   // nunca mostra datas que já passaram
+});
 
 window.matchMedia('(min-width:721px)').addEventListener('change', ()=>{
   const bs = document.getElementById('publicBookingScreen');
@@ -6787,7 +6849,11 @@ function renderBookingScreen(){
   const bkClinic = getClinic(selectedPublicClinicId);
   document.getElementById('bookingClinicLine').textContent = bkClinic ? (bkClinic.name + ' · ' + (bkClinic.specialty || selectedSpecialty || DATA.settings.specialty || '')) : '';
 
-  const next15 = getNextValidDays(window.matchMedia('(min-width:721px)').matches ? 30 : 15, new Date(), selectedPublicClinicId);
+  const perPage = bkPerPage();
+  const firstValid = getNextValidDays(1, new Date(), selectedPublicClinicId)[0] || null;
+  if(!bkViewStart || (firstValid && bkViewStart < firstValid)) bkViewStart = firstValid ? new Date(firstValid) : null;
+  const next15 = bkViewStart ? getNextValidDays(perPage, bkViewStart, selectedPublicClinicId) : [];
+  if(next15.length && fmtDate(next15[0]) !== fmtDate(bkViewStart)) bkViewStart = new Date(next15[0]);
   if(!selectedPublicDate){
     selectedPublicDate = next15[0];
   }
@@ -6819,7 +6885,14 @@ function renderBookingScreen(){
 
   const slotListLabel = document.getElementById('slotListLabel');
   slotListLabel.textContent = longDayLabel(selectedPublicDate);
-  document.getElementById('bkMonth').textContent = monthLabel(selectedPublicDate);
+  document.getElementById('bkMonth').textContent = monthLabel(bkViewStart || selectedPublicDate);
+  // Setas: só aparecem quando há para onde ir (nunca para datas que já passaram).
+  const hasEarlier = !!(bkViewStart && firstValid && fmtDate(bkViewStart) > fmtDate(firstValid));
+  const hasLater = !!(bkViewStart && getNextValidDays(perPage+1, bkViewStart, selectedPublicClinicId).length > perPage);
+  document.getElementById('bkStripPrev').classList.toggle('is-hidden', !hasEarlier);
+  document.getElementById('bkStripNext').classList.toggle('is-hidden', !hasLater);
+  document.getElementById('bkPrevDays').classList.toggle('is-hidden', !bkMonthTarget(-1));
+  document.getElementById('bkNextDays').classList.toggle('is-hidden', !bkMonthTarget(1));
 
   const minFutureDt = new Date();
   minFutureDt.setHours(0,0,0,0);
@@ -6863,6 +6936,7 @@ function renderBookingScreen(){
       return;
     }
     selectedPublicDate = dt;
+    bkViewStart = new Date(dt);
     renderBookingScreen();
   }
 
@@ -6895,6 +6969,7 @@ function renderBookingScreen(){
         return;
       }
       selectedPublicDate = dt;
+      bkViewStart = new Date(dt);
       renderBookingScreen();
     };
   }
