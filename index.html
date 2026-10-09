@@ -1292,6 +1292,87 @@ span.prof-tag.removable{
 :root .settings-form .field,:root .settings-form .field.field-narrow{width:100%;max-width:none;align-self:stretch;}
 :root .settings-form input[type=text],:root .settings-form input[type=password]{text-align:left;width:100%;}
 }
+
+/* ===== v38 — tela de marcação do paciente: topo da opção B + dia/horários da opção A ===== */
+#publicBookingScreen{max-width:760px;margin:0 auto;}
+.bk-hero{background:#173F5F;color:#fff;border-radius:14px;padding:20px 20px 18px;margin-bottom:22px;}
+.bk-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.bk-hero-sub{font-size:.82rem;color:#C4D4E2;}
+:root .bk-hero h2{color:#fff;font-size:1.6rem;margin:2px 0 0;line-height:1.2;}
+.bk-logout{background:none;border:0;color:#C4D4E2;padding:6px;border-radius:6px;cursor:pointer;display:flex;}
+.bk-logout:hover{color:#fff;background:rgba(255,255,255,.12);}
+.bk-logout svg{width:22px;height:22px;}
+.bk-next{margin-top:16px;display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.24);border-radius:10px;padding:11px 14px;color:#fff;cursor:pointer;font:inherit;}
+.bk-next:hover{background:rgba(255,255,255,.16);}
+.bk-next svg{width:22px;height:22px;flex:none;}
+.bk-next-txt{flex:1;min-width:0;}
+.bk-next small{display:block;font-size:.76rem;color:#C4D4E2;}
+.bk-next strong{font-weight:600;font-size:.95rem;}
+.bk-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.bk-month{display:flex;align-items:center;gap:4px;font-size:.82rem;color:var(--ink-soft);}
+.bk-month button{background:none;border:0;font-size:1.2rem;line-height:1;color:var(--teal-deep);padding:4px 8px;cursor:pointer;}
+:root .day-chip-row{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 36px)/7);gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 0 6px;margin:0 0 6px;scrollbar-width:none;}
+.day-chip-row::-webkit-scrollbar{display:none;}
+:root .day-chip{min-width:0;padding:8px 0;text-align:center;scroll-snap-align:start;border-radius:8px;border:1px solid var(--line);background:#fff;}
+:root .day-chip .dc-dow{font-size:.74rem;color:var(--ink-soft);}
+:root .day-chip .dc-num{font-size:1.15rem;font-weight:500;color:var(--ink);line-height:1.2;}
+:root .day-chip .dc-mon{font-size:.68rem;color:var(--ink-soft);}
+:root .day-chip.selected .dc-dow,:root .day-chip.selected .dc-num,:root .day-chip.selected .dc-mon{color:#fff;}
+:root .future-date-inline{margin:12px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;}
+:root .future-date-inline label{color:var(--teal-mid);font-weight:500;font-size:.88rem;text-transform:none;letter-spacing:0;}
+#publicBookingScreen .future-date-hint{margin:6px 0 10px;}
+.bk-day-title{font-size:1.15rem;font-weight:500;color:var(--teal-deep);margin:16px 0 4px;}
+:root .slot-list{display:block;}
+.bk-period{font-size:.8rem;color:var(--ink-soft);margin:12px 0 6px;}
+.bk-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+:root .bk-slots .slot-btn{padding:11px 0;font-size:.92rem;min-height:44px;}
+:root .bk-slots .slot-btn.on{background:var(--teal-deep);color:#fff;border-color:var(--teal-deep);}
+:root .bk-slots .slot-btn.off,:root .bk-slots .slot-btn.off:hover{background:#EEF2F6;color:#A3AEB8;text-decoration:line-through;border-color:#E3E9EE;cursor:default;}
+#publicBookingScreen .my-appts-wrap{margin:22px 0 12px;background:#fff;border:1px solid var(--line);border-radius:10px;}
+.bk-acc{display:flex;width:100%;justify-content:space-between;align-items:center;padding:13px 14px;background:none;border:0;font:inherit;font-weight:500;color:var(--ink);cursor:pointer;text-align:left;}
+.bk-acc svg{width:18px;height:18px;transition:transform .15s;}
+.my-appts-wrap.open .bk-acc svg{transform:rotate(180deg);}
+.bk-count{color:var(--ink-soft);font-weight:400;}
+#myAppts{padding:0 14px 14px;}
+#myAppts[hidden]{display:none;}
+.bk-confirm{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:12px;background:#fff;border-top:1px solid var(--line);padding:12px 16px;margin:16px -12px 0;}
+.bk-confirm > div{flex:1;min-width:0;}
+.bk-confirm small{display:block;font-size:.76rem;color:var(--ink-soft);}
+.bk-confirm strong{font-weight:600;font-size:.95rem;}
+:root .bk-confirm .btn{padding:11px 22px;}
+.bk-confirm:not(.ready) .btn{opacity:.55;}
+:root #publicArea:has(#publicBookingScreen[style*="block"]) .public-banner{padding:12px 16px;margin-bottom:16px;background:#fff;border:1px solid var(--line);}
+:root #publicArea:has(#publicBookingScreen[style*="block"]) .public-banner::after{display:none;}
+:root #publicArea:has(#publicBookingScreen[style*="block"]) .public-banner strong{font-size:.95rem;color:var(--teal-deep);margin:0;}
+:root #publicArea:has(#publicBookingScreen[style*="block"]) .public-banner span{font-size:.8rem;color:var(--ink-soft);}
+@media (min-width:721px){
+.bk-hero{padding:26px 28px 24px;}
+:root .bk-hero h2{font-size:1.9rem;}
+.bk-slots{grid-template-columns:repeat(6,1fr);}
+.bk-confirm{margin:18px 0 0;border:1px solid var(--line);border-radius:12px;box-shadow:0 -4px 16px -8px rgba(18,38,58,.2);}
+}
+
+/* v39 — só desktop: largura igual à da barra da clínica e mais datas */
+@media (min-width:721px){
+#publicBookingScreen{max-width:none;}
+:root .day-chip-row{grid-auto-columns:calc((100% - 54px)/10);}
+.bk-slots{grid-template-columns:repeat(8,1fr);}
+}
+
+/* v40 — só desktop: períodos lado a lado, ocupando toda a largura */
+@media (min-width:721px){
+:root .slot-list{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:0 28px;}
+.bk-slots{grid-template-columns:repeat(3,1fr);}
+.slot-list .no-slots{grid-column:1 / -1;}
+.bk-period{font-size:.85rem;font-weight:500;color:var(--teal-deep);padding-bottom:6px;margin:12px 0 8px;border-bottom:1px solid var(--line);}
+}
+
+/* v41 — só desktop: períodos empilhados, cada linha de horários preenche a largura do layout */
+@media (min-width:721px){
+:root .slot-list{display:block;}
+.bk-slots{grid-template-columns:repeat(var(--c,6),minmax(0,1fr));}
+.bk-period{font-size:.8rem;font-weight:400;color:var(--ink-soft);padding:0;border:0;margin:12px 0 6px;}
+}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -1967,32 +2048,44 @@ span.prof-tag.removable{
 
     <!-- BOOKING SCREEN -->
     <div id="publicBookingScreen" style="display:none;">
-      <div class="booking-header">
-        <div>
-          <h2 id="bookingGreeting">Olá!</h2>
-          <div class="sub">sessões com duração fixa de 1 hora</div>
+      <div class="bk-hero">
+        <div class="bk-hero-top">
+          <div>
+            <div class="bk-hero-sub" id="bookingClinicLine"></div>
+            <h2 id="bookingGreeting">Olá!</h2>
+          </div>
+          <button type="button" class="bk-logout" id="logoutBtn" aria-label="Sair / trocar de conta" title="Sair / trocar de conta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/><path d="M9 12h12l-3-3m3 3-3 3"/></svg></button>
         </div>
-        <button class="logout-link" id="logoutBtn">Sair / trocar de conta</button>
+        <button type="button" class="bk-next" id="bkNext" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16M9 16l2 2 4-4"/></svg>
+          <span class="bk-next-txt"><small>Próxima consulta</small><strong id="bkNextText"></strong></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
       </div>
-
-      <div class="days-header">
-        <span class="section-label">Próximos dias disponíveis</span>
+      <div class="bk-body">
+        <div class="bk-section-head">
+          <span class="section-label">Escolha o dia</span>
+          <span class="bk-month"><button type="button" id="bkPrevDays" aria-label="Dias anteriores">&lsaquo;</button><span id="bkMonth"></span><button type="button" id="bkNextDays" aria-label="Próximos dias">&rsaquo;</button></span>
+        </div>
+        <div class="day-chip-row" id="dayChipRow"></div>
         <div class="future-date-inline">
-          <label for="futureDateInput">Escolha outra data</label>
+          <label for="futureDateInput">Escolher outra data</label>
           <div class="future-date-input-group">
             <input type="text" id="futureDateInput" inputmode="numeric" placeholder="DD/MM/AAAA" maxlength="10" autocomplete="off">
             <input type="date" id="futureDateCalendar" class="future-date-calendar" aria-label="Escolher data no calendário">
           </div>
         </div>
+        <div class="future-date-hint" id="futureDateHint"></div>
+        <div class="bk-day-title" id="slotListLabel">Escolha seu horário</div>
+        <div class="slot-list" id="slotList"></div>
+        <div class="my-appts-wrap" id="myApptsWrap">
+          <button type="button" class="bk-acc" id="myApptsToggle" aria-expanded="false"><span>Seus agendamentos <span class="bk-count" id="myApptsCount"></span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div id="myAppts" hidden></div>
+        </div>
       </div>
-      <div class="future-date-hint" id="futureDateHint"></div>
-      <div class="day-chip-row" id="dayChipRow"></div>
-      <div class="section-label" id="slotListLabel" style="display:block;margin:30px 0 18px;">Escolha seu horário de atendimento</div>
-      <div class="slot-list" id="slotList"></div>
-
-      <div class="my-appts-wrap">
-        <div class="history-title">Seus agendamentos</div>
-        <div id="myAppts"></div>
+      <div class="bk-confirm" id="bkConfirm">
+        <div><small>Horário escolhido</small><strong id="bkConfirmText">Nenhum horário selecionado</strong></div>
+        <button type="button" class="btn" id="bkConfirmBtn">Confirmar</button>
       </div>
     </div>
   </section>
@@ -6519,11 +6612,60 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 });
 
 /* --- booking screen --- */
+let selectedPublicSlot = null, myApptsOpen = false, myApptsTouched = false;
+const BK_DOW = ['dom','seg','ter','qua','qui','sex','sáb'];
+const BK_MON = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function bkCap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
+function fmtShortDay(iso){ const d = parseIso(iso); return bkCap(BK_DOW[d.getDay()]) + ', ' + d.getDate() + ' ' + BK_MON[d.getMonth()]; }
+function longDayLabel(d){ return bkCap(d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})); }
+function monthLabel(d){ return bkCap(d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(' de ',' ')); }
+function applyMyApptsState(){
+  document.getElementById('myApptsWrap').classList.toggle('open', myApptsOpen);
+  document.getElementById('myAppts').hidden = !myApptsOpen;
+  document.getElementById('myApptsToggle').setAttribute('aria-expanded', String(myApptsOpen));
+}
+function updateBookingExtras(sessions){
+  const todayKey = fmtDate(new Date()) + '00:00';
+  const active = sessions.filter(s=>(s.status==='agendado'||s.status==='confirmado'||s.status==='aguardando_pagamento') && (s.date+s.hour) >= todayKey)
+    .sort((a,b)=> (a.date+a.hour) > (b.date+b.hour) ? 1 : -1);
+  const nx = document.getElementById('bkNext');
+  if(active.length){
+    const n = active[0];
+    document.getElementById('bkNextText').textContent = fmtShortDay(n.date) + ' · ' + n.hour + (n.status==='aguardando_pagamento' ? ' · aguardando pagamento' : '');
+    nx.style.display = 'flex';
+  } else { nx.style.display = 'none'; }
+  document.getElementById('myApptsCount').textContent = sessions.length ? '(' + sessions.length + ')' : '';
+  if(!myApptsTouched) myApptsOpen = sessions.some(s=>s.status==='aguardando_pagamento');
+  applyMyApptsState();
+}
+function updateConfirmBar(){
+  const t = document.getElementById('bkConfirmText'), bar = document.getElementById('bkConfirm');
+  if(selectedPublicSlot){ t.textContent = fmtShortDay(selectedPublicSlot.date) + ' · ' + selectedPublicSlot.hour; bar.classList.add('ready'); }
+  else { t.textContent = 'Nenhum horário selecionado'; bar.classList.remove('ready'); }
+}
+document.getElementById('bkConfirmBtn').addEventListener('click', ()=>{
+  if(!selectedPublicSlot){ alert('Escolha um horário para continuar.'); return; }
+  openBookModal(selectedPublicSlot.date, selectedPublicSlot.hour);
+});
+document.getElementById('myApptsToggle').addEventListener('click', ()=>{ myApptsTouched = true; myApptsOpen = !myApptsOpen; applyMyApptsState(); });
+document.getElementById('bkNext').addEventListener('click', ()=>{
+  myApptsTouched = true; myApptsOpen = true; applyMyApptsState();
+  document.getElementById('myApptsWrap').scrollIntoView({behavior:'smooth', block:'center'});
+});
+document.getElementById('bkPrevDays').addEventListener('click', ()=>{ const r = document.getElementById('dayChipRow'); r.scrollBy({left:-r.clientWidth*0.85, behavior:'smooth'}); });
+document.getElementById('bkNextDays').addEventListener('click', ()=>{ const r = document.getElementById('dayChipRow'); r.scrollBy({left:r.clientWidth*0.85, behavior:'smooth'}); });
+
+window.matchMedia('(min-width:721px)').addEventListener('change', ()=>{
+  const bs = document.getElementById('publicBookingScreen');
+  if(bs && bs.style.display === 'block') renderBookingScreen();
+});
 function renderBookingScreen(){
   const patient = DATA.patients.find(p=>p.id===loggedPatientId);
-  document.getElementById('bookingGreeting').textContent = 'Olá, ' + (patient ? patient.name.split(' ')[0] : '') + '!';
+  document.getElementById('bookingGreeting').textContent = 'Olá, ' + (patient ? patient.name.split(' ')[0] : '');
+  const bkClinic = getClinic(selectedPublicClinicId);
+  document.getElementById('bookingClinicLine').textContent = bkClinic ? (bkClinic.name + ' · ' + (bkClinic.specialty || selectedSpecialty || DATA.settings.specialty || '')) : '';
 
-  const next15 = getNextValidDays(15, new Date(), selectedPublicClinicId);
+  const next15 = getNextValidDays(window.matchMedia('(min-width:721px)').matches ? 30 : 15, new Date(), selectedPublicClinicId);
   if(!selectedPublicDate){
     selectedPublicDate = next15[0];
   }
@@ -6539,7 +6681,8 @@ function renderBookingScreen(){
     const mm = String(d.getMonth()+1).padStart(2,'0');
     return `<div class="day-chip ${sel}" data-date="${iso}">
       <div class="dc-dow">${dowNames[d.getDay()]}</div>
-      <div class="dc-num">${dd}/${mm}</div>
+      <div class="dc-num">${dd}</div>
+      <div class="dc-mon">${BK_MON[d.getMonth()]}</div>
     </div>`;
   }).join('');
   chipRow.querySelectorAll('.day-chip').forEach(el=>{
@@ -6553,9 +6696,8 @@ function renderBookingScreen(){
   renderSlotList(selectedPublicDate);
 
   const slotListLabel = document.getElementById('slotListLabel');
-  slotListLabel.textContent = isCustomFutureDate
-    ? 'Escolha seu horário de atendimento para o ' + isoToDisplay(selIso)
-    : 'Escolha seu horário de atendimento';
+  slotListLabel.textContent = longDayLabel(selectedPublicDate);
+  document.getElementById('bkMonth').textContent = monthLabel(selectedPublicDate);
 
   const minFutureDt = new Date();
   minFutureDt.setHours(0,0,0,0);
@@ -6641,20 +6783,33 @@ function renderBookingScreen(){
 function renderSlotList(date){
   const iso = fmtDate(date);
   const list = document.getElementById('slotList');
-  const free = hourRangeForDate(iso, selectedPublicClinicId).filter(h=>{
-    const taken = DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h);
-    if(taken) return false;
-    if(isPastSlot(iso,h)) return false;
-    return true;
-  });
-  if(!free.length){
+  const all = hourRangeForDate(iso, selectedPublicClinicId);
+  const isFree = h => !DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h) && !isPastSlot(iso,h);
+  if(selectedPublicSlot && !(selectedPublicSlot.date===iso && isFree(selectedPublicSlot.hour))) selectedPublicSlot = null;
+  if(!all.some(isFree)){
     list.innerHTML = '<p class="no-slots">Nenhum horário disponível neste dia.</p>';
+    updateConfirmBar();
     return;
   }
-  list.innerHTML = free.map(h=>`<button type="button" class="slot-btn" data-hour="${h}">${h}</button>`).join('');
-  list.querySelectorAll('.slot-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=> openBookModal(iso, btn.dataset.hour));
+  const groups = [['Manhã', h=>parseInt(h,10)<12], ['Tarde', h=>parseInt(h,10)>=12 && parseInt(h,10)<18], ['Noite', h=>parseInt(h,10)>=18]];
+  list.innerHTML = groups.map(([name,fn])=>{
+    const hs = all.filter(fn);
+    if(!hs.length) return '';
+    return '<div class="bk-group"><div class="bk-period">' + name + '</div><div class="bk-slots" style="--c:' + Math.min(Math.max(hs.length,4),8) + '">' + hs.map(h=>{
+      if(!isFree(h)) return '<button type="button" class="slot-btn off" disabled aria-label="' + h + ' indisponível">' + h + '</button>';
+      const on = selectedPublicSlot && selectedPublicSlot.hour===h;
+      return '<button type="button" class="slot-btn' + (on ? ' on' : '') + '" data-hour="' + h + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + h + '</button>';
+    }).join('') + '</div></div>';
+  }).join('');
+  list.style.setProperty('--n', list.querySelectorAll('.bk-group').length || 1);
+  list.querySelectorAll('.slot-btn:not(.off)').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      selectedPublicSlot = {date: iso, hour: btn.dataset.hour};
+      list.querySelectorAll('.slot-btn').forEach(b=>{ b.classList.toggle('on', b===btn); b.setAttribute('aria-pressed', b===btn ? 'true' : 'false'); });
+      updateConfirmBar();
+    });
   });
+  updateConfirmBar();
 }
 
 function openBookModal(date, hour){
@@ -7332,6 +7487,7 @@ function renderMyAppts(){
   const sessions = DATA.appointments
     .filter(a=>myIds.includes(a.patientId))
     .sort((a,b)=> (a.date+a.hour) < (b.date+b.hour) ? 1 : -1);
+  updateBookingExtras(sessions);
   if(!sessions.length){
     container.innerHTML = '<p class="empty-note">Você ainda não tem agendamentos.</p>';
     return;
