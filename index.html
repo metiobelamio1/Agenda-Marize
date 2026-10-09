@@ -289,6 +289,26 @@ table.agenda td{
   border-left:3px solid var(--gray);cursor:default;
 }
 .slot.st-bloqueado .pname{color:var(--gray);}
+/* Destaque ao abrir um agendamento pelo alerta: pulso suave em azul escuro,
+   10 vezes, um a cada 2 segundos (some antes se houver qualquer clique). */
+.slot.flash-alert{position:relative;animation:slotFlash 2s ease-in-out 10;}
+.slot.flash-alert::before{
+  content:'';position:absolute;inset:0;border-radius:6px;pointer-events:none;
+  background:#173F5F;opacity:0;animation:slotFlashOverlay 2s ease-in-out 10;
+}
+@keyframes slotFlash{
+  0%,100%{box-shadow:0 0 0 0 rgba(23,63,95,0);}
+  50%{box-shadow:0 0 0 3px rgba(23,63,95,.85),0 0 14px 2px rgba(23,63,95,.35);}
+}
+@keyframes slotFlashOverlay{
+  0%,100%{opacity:0;}
+  50%{opacity:.22;}
+}
+@media (prefers-reduced-motion:reduce){
+  .slot.flash-alert,.slot.flash-alert::before{animation-duration:4s;}
+}
+.alert-item.clickable{cursor:pointer;}
+.alert-item.clickable:hover{background:var(--sand-dim);}
 .slot.na{
   background:repeating-linear-gradient(45deg,var(--sand),var(--sand) 6px,var(--sand-dim) 6px,var(--sand-dim) 12px);
   cursor:not-allowed;opacity:0.5;
@@ -1373,6 +1393,26 @@ span.prof-tag.removable{
 .bk-slots{grid-template-columns:repeat(var(--c,6),minmax(0,1fr));}
 .bk-period{font-size:.8rem;font-weight:400;color:var(--ink-soft);padding:0;border:0;margin:12px 0 6px;}
 }
+
+/* v45 — banner invertido (fundo azul, detalhes brancos) SÓ nos logins de
+   administrador, recepção e profissional (classe staff-header no <body>,
+   ligada em renderAlerts). A interface do paciente não recebe essa classe. */
+body.staff-header header.top{background:#173F5F;border-color:#173F5F;}
+body.staff-header .brand::before{background-color:#fff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 46'%3E%3Cpath d='M20 11h6v9h9v6h-9v9h-6v-9h-9v-6h9z' fill='none' stroke='%23173F5F' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");}
+body.staff-header .brand h1{color:#fff;}
+body.staff-header .brand .specialty{color:rgba(255,255,255,.78);}
+body.staff-header .today{color:rgba(255,255,255,.82);}
+body.staff-header .alerts-bell{background:transparent;border-color:rgba(255,255,255,.55);color:#fff;}
+body.staff-header .alerts-bell:hover{background:rgba(255,255,255,.12);border-color:#fff;}
+body.staff-header .alerts-bell.has-new{border-color:#fff;animation-name:alertsBellPulseLight;}
+@keyframes alertsBellPulseLight{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}
+  50%{box-shadow:0 0 0 6px rgba(255,255,255,.25);}
+}
+body.staff-header .alerts-badge{outline-color:#173F5F;}
+body.staff-header .mode-badge{background:transparent;border-color:rgba(255,255,255,.55);color:#fff;}
+body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-color:#fff;color:#fff;}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -2148,8 +2188,7 @@ span.prof-tag.removable{
       <div class="field" id="apptStatusField">
         <label>Status</label>
         <div class="status-choices" id="apptStatusChoices">
-          <button type="button" class="status-chip sel-agendado" data-status="agendado">Agendado</button>
-          <button type="button" class="status-chip sel-confirmado" data-status="confirmado">Confirmado</button>
+          <button type="button" class="status-chip sel-confirmado" data-status="confirmado">Agendamento confirmado</button>
           <button type="button" class="status-chip sel-concluido" data-status="concluido">Concluído</button>
           <button type="button" class="status-chip sel-falta" data-status="falta">Falta</button>
           <button type="button" class="status-chip sel-cancelado" data-status="cancelado">Cancelado</button>
@@ -3756,6 +3795,7 @@ function computeAvailabilityAlerts(){
     if(isAlertSnoozed(id)) return;
     alerts.push({
       id, icon:'📅',
+      onOpen: ()=>{ if(currentRole === 'admin') goToPanelFromAlert('availability'); },
       title:'Disponibilidade acabando — ' + c.name,
       desc: diffDays < 0
         ? `A disponibilidade cadastrada para ${c.name} venceu em ${isoToDisplay(maxDate)}. Marque novos dias na aba Disponibilidade.`
@@ -3774,6 +3814,7 @@ function computeBackupAlert(){
   if(diffDays < ALERT_BACKUP_THRESHOLD_DAYS) return [];
   return [{
     id, icon:'💾',
+    onOpen: ()=>goToPanelFromAlert('financeiro', 'backupSection'),
     title:'Backup do Financeiro pendente',
     desc: last
       ? `Já fazem ${diffDays} dias desde o último backup (${isoToDisplay(last)}). Baixe um novo em Financeiro → Backup.`
@@ -3783,18 +3824,70 @@ function computeBackupAlert(){
 }
 function computeBookingAlerts(clinicFilterId){
   return (DATA.appointments || [])
-    .filter(a=> a.bookedBySelf && !a.alertSeen && (!clinicFilterId || a.clinicId===clinicFilterId))
+    .filter(a=> a.bookedBySelf && !a.alertSeen && (!clinicFilterId || a.clinicId===clinicFilterId)
+      // Só vira "Nova consulta marcada" quando a consulta está confirmada ou com o
+      // sinal (ou valor) já pago; enquanto aguarda pagamento, não alerta.
+      && (a.status === 'confirmado' || a.sinalPago))
     .sort((a,b)=> (a.date+a.hour) < (b.date+b.hour) ? 1 : -1)
     .map(a=>{
       const p = DATA.patients.find(pt=>pt.id===a.patientId);
       const clinic = getClinic(a.clinicId);
       return {
         id:'booking-'+a.id, icon:'🗓️',
+        onOpen: ()=>openAppointmentFromAlert(a.id),
         title:'Nova consulta marcada',
         desc: `${p ? p.name : 'Paciente'} marcou ${isoToDisplay(a.date)} às ${a.hour}${clinic ? ' — '+clinic.name : ''}.`,
         onDismiss: ()=>{ a.alertSeen = true; syncAppointmentToSupabase(a); saveData(); }
       };
     });
+}
+// Navegação a partir de um alerta (clique no próprio alerta).
+function goToPanelFromAlert(name, scrollToId){
+  if(!panelAllowedForRole(name)) return;
+  if(name !== currentPanelName){
+    showPanel(name);
+    historyMarkPanel(name, false);
+  }
+  if(scrollToId){
+    setTimeout(()=>{
+      const el = document.getElementById(scrollToId);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 60);
+  }
+}
+let flashAlertSlot = null;
+function stopSlotFlash(){
+  if(flashAlertSlot){ flashAlertSlot.classList.remove('flash-alert'); flashAlertSlot = null; }
+  document.removeEventListener('pointerdown', stopSlotFlash, true);
+}
+function flashSlotForAppointment(apptId){
+  stopSlotFlash();
+  const el = document.querySelector('#agendaTable .slot[data-appt="'+apptId+'"]');
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+  setTimeout(()=>{
+    // reinicia a animação mesmo que a classe já existisse
+    el.classList.remove('flash-alert'); void el.offsetWidth;
+    el.classList.add('flash-alert');
+    flashAlertSlot = el;
+    el.addEventListener('animationend', (ev)=>{ if(ev.target === el) stopSlotFlash(); }, {once:true});
+    // só passa a valer depois do clique que abriu o alerta terminar
+    document.addEventListener('pointerdown', stopSlotFlash, true);
+  }, 450);
+}
+function openAppointmentFromAlert(apptId){
+  const a = (DATA.appointments || []).find(x=>x.id===apptId);
+  if(!a) return;
+  if(currentPanelName !== 'agenda'){
+    showPanel('agenda');
+    historyMarkPanel('agenda', false);
+  }
+  if(currentRole !== 'professional') adminClinicId = a.clinicId;
+  agendaShowAll = false;
+  currentWeekStart = mondayOf(parseIso(a.date));
+  renderAdminClinicTabs();
+  renderAgenda();
+  flashSlotForAppointment(apptId);
 }
 function computeAlerts(){
   if(typeof publicMode !== 'undefined' && publicMode) return [];
@@ -3806,6 +3899,8 @@ function computeAlerts(){
   return [...computeAvailabilityAlerts(), ...computeBackupAlert(), ...computeBookingAlerts(null)];
 }
 function renderAlerts(){
+  // Banner azul só nos logins de administrador, recepção e profissional.
+  document.body.classList.toggle('staff-header', !!currentRole && !(typeof publicMode !== 'undefined' && publicMode));
   const wrap = document.getElementById('alertsWrap');
   if(!wrap) return;
   if((typeof publicMode !== 'undefined' && publicMode) || !currentRole){
@@ -3832,7 +3927,7 @@ function renderAlerts(){
     return;
   }
   list.innerHTML = alerts.map(a=>`
-    <div class="alert-item">
+    <div class="alert-item${a.onOpen ? ' clickable' : ''}" data-open-alert="${a.id}">
       <span class="aicon">${a.icon}</span>
       <div class="abody">
         <div class="atitle">${escapeHtml(a.title)}</div>
@@ -3841,6 +3936,17 @@ function renderAlerts(){
       <button type="button" class="adismiss" data-dismiss-alert="${a.id}" title="Dispensar">×</button>
     </div>
   `).join('');
+  list.querySelectorAll('[data-open-alert]').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      const alertObj = alerts.find(x=>x.id===item.dataset.openAlert);
+      if(!alertObj || !alertObj.onOpen) return;
+      document.getElementById('alertsPanel').style.display = 'none';
+      alertObj.onOpen();
+      // Ao abrir pelo alerta, ele sai da central.
+      if(alertObj.onDismiss) alertObj.onDismiss();
+      renderAlerts();
+    });
+  });
   list.querySelectorAll('[data-dismiss-alert]').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -4187,7 +4293,11 @@ function renderAgenda(){
   }
 
   const weekDates = [];
-  for(let i=0;i<6;i++){
+  // Se "Atender aos sábados" estiver desmarcado nas Configurações, a coluna de
+  // sábado não aparece na agenda (segunda a sexta); marcando de novo, ela volta.
+  const showSaturday = DATA.settings.allowSaturday !== false;
+  const daysInWeekView = showSaturday ? 6 : 5;
+  for(let i=0;i<daysInWeekView;i++){
     const d = new Date(currentWeekStart);
     d.setDate(d.getDate()+i);
     weekDates.push(d);
@@ -4199,7 +4309,7 @@ function renderAgenda(){
 
   const hours = hourRange(adminClinicId);
   const todayIso = fmtDate(new Date());
-  const dayNames = ['SEG','TER','QUA','QUI','SEX','SÁB'];
+  const dayNames = ['SEG','TER','QUA','QUI','SEX','SÁB'].slice(0, daysInWeekView);
 
   let html = '<thead><tr><th></th>';
   weekDates.forEach((d,i)=>{
@@ -4247,6 +4357,11 @@ function renderAgenda(){
 // coluna por profissional (cada uma identificada por nome + especialidade)
 // em vez de uma coluna por dia da semana.
 function renderAgendaAllProfessionalsDay(){
+  // Sábado desativado nas Configurações: se o dia exibido cair num sábado,
+  // avança para a segunda-feira seguinte.
+  if(DATA.settings.allowSaturday === false && new Date(agendaAllDate + 'T00:00:00').getDay() === 6){
+    shiftAgendaAllDate(2);
+  }
   const iso = agendaAllDate;
   const d = new Date(iso + 'T00:00:00');
   const label = d.toLocaleDateString('pt-BR',{weekday:'short', day:'numeric', month:'short', year:'numeric'});
@@ -4315,7 +4430,7 @@ function apptStatusLabel(a){
   return statusLabel(a && a.status);
 }
 function statusLabel(s){
-  return {agendado:'Agendado', confirmado:'Confirmado', concluido:'Concluído', falta:'Falta', cancelado:'Cancelado', bloqueado:'Bloqueado', aguardando_pagamento:'Aguardando pagamento do sinal'}[s] || s;
+  return {agendado:'Agendado', confirmado:'Agendamento confirmado', concluido:'Concluído', falta:'Falta', cancelado:'Cancelado', bloqueado:'Bloqueado', aguardando_pagamento:'Aguardando pagamento do sinal'}[s] || s;
 }
 function escapeHtml(str){
   const div = document.createElement('div'); div.textContent = str; return div.innerHTML;
@@ -4324,6 +4439,10 @@ function escapeHtml(str){
 function shiftAgendaAllDate(days){
   const d = new Date(agendaAllDate + 'T00:00:00');
   d.setDate(d.getDate()+days);
+  // Pula o sábado quando "Atender aos sábados" está desmarcado.
+  if(DATA.settings.allowSaturday === false && d.getDay() === 6){
+    d.setDate(d.getDate() + (days < 0 ? -1 : 1));
+  }
   agendaAllDate = fmtDate(d);
 }
 document.getElementById('prevWeek').addEventListener('click', ()=>{
@@ -4561,6 +4680,9 @@ document.getElementById('apptDate').addEventListener('change', (e)=>{
   fillHourSelect(null, e.target.value);
 });
 function setStatusChip(status){
+  // A opção "Agendado" foi retirada do modal: agendamentos antigos nesse
+  // status aparecem como "Agendamento confirmado".
+  if(status === 'agendado') status = 'confirmado';
   document.querySelectorAll('#apptStatusChoices .status-chip').forEach(c=>{
     c.classList.toggle('selected', c.dataset.status===status);
   });
@@ -4622,7 +4744,7 @@ function openApptModal(apptId, date, hour, type, clinicId){
     renderApptProceduresPicker(currentApptClinicId, []);
     document.getElementById('apptDate').value = date;
     fillHourSelect(hour);
-    setStatusChip('agendado');
+    setStatusChip('confirmado');
     updateApptManualPay(null);
     document.getElementById('apptNote').value = '';
     delBtn.style.display = 'none';
@@ -4837,7 +4959,7 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
     try{ apptProcedures = JSON.parse(document.getElementById('apptProceduresHidden').value || '[]'); }catch(e){ apptProcedures = []; }
     if(!Array.isArray(apptProcedures)) apptProcedures = [];
     const statusChip = document.querySelector('#apptStatusChoices .status-chip.selected');
-    const status = statusChip ? statusChip.dataset.status : 'agendado';
+    const status = statusChip ? statusChip.dataset.status : 'confirmado';
     let previousStatus = null;
     let apptRef;
     if(editingApptId){
