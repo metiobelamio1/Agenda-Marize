@@ -2716,6 +2716,11 @@ const LOCAL_TEST_MODE = (location.protocol === 'file:' || /^(localhost|127\.0\.0
   && !/[?&]online=1/.test(location.search);
 window.__LOCAL_TEST_MODE = LOCAL_TEST_MODE;
 let sbClient = null;
+// Só uma sessão de ADMIN pode gravar login/senha/PIN no banco. Antes, qualquer
+// sessão (paciente, recepção) regravava esses campos com os padrões locais
+// ('profissional' / '1234' / '13579') a cada saveData(), o que quebrava o
+// login de admin no Worker (401 credenciais inválidas).
+let adminCredsWritable = false;
 try{
   if(!LOCAL_TEST_MODE && window.supabase && window.supabase.createClient){
     sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -3147,8 +3152,10 @@ function agendaClinicToRow(c){
   return {
     id: c.id, name: c.name, specialty: c.specialty || null, procedures: Array.isArray(c.procedures) ? c.procedures : [],
     start_hour: c.start || null, end_hour: c.end || null,
-    login: c.login || null, password: c.password || null,
-    reception_login: c.receptionLogin || null, reception_password: c.receptionPassword || null
+    ...(adminCredsWritable ? {
+      login: c.login || null, password: c.password || null,
+      reception_login: c.receptionLogin || null, reception_password: c.receptionPassword || null
+    } : {})
   };
 }
 function rowToAgendaClinic(r){
@@ -3161,9 +3168,12 @@ function rowToAgendaClinic(r){
 function settingsToRow(){
   return {
     id: 'main', specialty: DATA.settings.specialty, allow_saturday: !!DATA.settings.allowSaturday,
-    allow_multi_clinic_same_day: !!DATA.settings.allowMultiClinicSameDay, access_pin: DATA.settings.accessPin,
-    professional_login: DATA.settings.professionalLogin, professional_password: DATA.settings.professionalPassword,
-    reception_login: DATA.settings.receptionLogin || 'recepcao', reception_password: DATA.settings.receptionPassword || '1234',
+    allow_multi_clinic_same_day: !!DATA.settings.allowMultiClinicSameDay,
+    ...(adminCredsWritable ? {
+      access_pin: DATA.settings.accessPin,
+      professional_login: DATA.settings.professionalLogin, professional_password: DATA.settings.professionalPassword,
+      reception_login: DATA.settings.receptionLogin || 'recepcao', reception_password: DATA.settings.receptionPassword || '1234'
+    } : {}),
     weekday_assignments: DATA.weekdayAssignments || {},
     weekday_split_rules: DATA.weekdaySplitRules || {},
     // Só envia se a coluna já existe no banco (lida no login) e quem salva é o admin:
@@ -3175,8 +3185,9 @@ function settingsToRow(){
 function rowToSettings(r){
   return {
     specialty: r.specialty || 'Fisioterapia', allowSaturday: r.allow_saturday !== false,
-    allowMultiClinicSameDay: !!r.allow_multi_clinic_same_day, accessPin: r.access_pin || '13579',
-    professionalLogin: r.professional_login || 'profissional', professionalPassword: r.professional_password || '1234',
+    allowMultiClinicSameDay: !!r.allow_multi_clinic_same_day,
+    ...(r.access_pin ? { accessPin: r.access_pin } : {}),
+    ...(r.professional_login ? { professionalLogin: r.professional_login, professionalPassword: r.professional_password || '1234' } : {}),
     ...(r.reception_login ? { receptionLogin: r.reception_login, receptionPassword: r.reception_password || '' } : {})
   };
 }
@@ -3731,6 +3742,7 @@ function init(){
 /* ---------- MODE SWITCH ---------- */
 function setPublicMode(on){
   publicMode = on;
+  if(on) adminCredsWritable = false;
   document.getElementById('navTabs').style.display = on ? 'none' : 'flex';
   document.getElementById('publicArea').style.display = on ? 'block' : 'none';
   document.getElementById('modeToggleBtn').style.display = on ? 'none' : 'inline-block';
@@ -4053,6 +4065,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
   const errEl = document.getElementById('pinError');
   const submitBtn = document.querySelector('#pinForm button[type="submit"]');
   if(submitBtn) submitBtn.disabled = true;
+  adminCredsWritable = false;
 
   try{
     if(!sbClient){
@@ -4101,6 +4114,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
         const { error: sessErr } = await sbClient.auth.setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
         if(sessErr) throw new Error('Sessão recusada pelo Supabase: ' + sessErr.message);
       }
+      adminCredsWritable = true;
       await loadAgendaConfigFromSupabase();
       await loadPatientsFromSupabase();
       await loadAppointmentsFromSupabase();
