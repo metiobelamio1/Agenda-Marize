@@ -4029,7 +4029,11 @@ document.getElementById('accessPinGateForm').addEventListener('submit',(e)=>{
   const typed = document.getElementById('accessPinGateInput').value.trim();
   const errEl = document.getElementById('accessPinGateError');
   const expected = DATA.settings.accessPin || '13579';
-  if(typed === expected){
+  // Com o Supabase ativo, o PIN verdadeiro mora no banco (access_pin) e é conferido
+  // pelo Worker junto com login e senha. Comparar aqui com o valor local (que vira
+  // o padrão 13579 quando o acesso público não enxerga access_pin) bloqueava ou
+  // desencontrava o PIN real. Só no modo local/modelo a conferência continua aqui.
+  if(typed && (sbClient || typed === expected)){
     errEl.classList.remove('show');
     enteredAccessPin = typed;
     document.getElementById('accessPinGateOverlay').classList.remove('active');
@@ -4185,7 +4189,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
   }catch(err){
     console.error('Falha no login', err);
     const motivo = String((err && err.message) || err);
-    errEl.textContent = /credenciais inv/i.test(motivo) ? 'Login ou senha incorretos.' : 'Não foi possível entrar: ' + motivo.slice(0, 220);
+    errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
     errEl.classList.add('show');
   }finally{
     if(submitBtn) submitBtn.disabled = false;
