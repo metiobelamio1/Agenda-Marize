@@ -1432,6 +1432,7 @@ body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-colo
    Só vale com a classe staff-header no <body>; o acesso do paciente não muda.
    A barra lateral pode ser ocultada (botão «) e voltar (botão ☰); a escolha fica
    guardada neste navegador. No celular ela vira uma gaveta. */
+:root{--v50-tint:rgba(47,107,150,.14)}
 .sb-toggle,.sb-show{display:none}
 html body.staff-header{background:var(--sand)}
 html body.staff-header .app{max-width:none;padding:0;display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:auto auto 1fr;grid-template-areas:"brand top" "nav main" "extra main";min-height:100vh}
@@ -1443,20 +1444,22 @@ html body.staff-header .brand .specialty{color:var(--ink-soft)}
 html body.staff-header nav.tabs{grid-area:nav;flex-direction:column;align-items:stretch;gap:2px;margin:0;padding:6px 12px 20px;background:#fff;border:0;border-right:1px solid var(--line);overflow:visible}
 html body.staff-header nav.tabs button{text-align:left;border:0;border-radius:8px;padding:9px 12px;margin:0;font-size:.9rem;font-weight:500;color:var(--ink);background:none}
 html body.staff-header nav.tabs button:hover{background:var(--sand-dim)}
-html body.staff-header nav.tabs button.active{background:#F3D9D2;color:var(--teal-deep);font-weight:600}
+html body.staff-header nav.tabs button.active{background:var(--v50-tint);color:var(--teal-deep);font-weight:600}
 html body.staff-header .head-right{grid-area:top;flex-direction:row;justify-content:flex-end;align-items:center;gap:14px;padding:14px 28px}
 html body.staff-header .today{color:var(--ink-soft)}
 html body.staff-header .alerts-bell{background:#fff;border-color:var(--teal-deep);color:var(--teal-deep)}
-html body.staff-header .alerts-bell:hover{background:#F3D9D2}
+html body.staff-header .alerts-bell:hover{background:var(--v50-tint)}
 html body.staff-header .alerts-badge{outline-color:var(--sand)}
 html body.staff-header .mode-badge{background:#fff;border:1.5px solid var(--line);color:var(--teal-deep)}
-html body.staff-header .mode-badge:hover{background:#F3D9D2;color:var(--teal-deep)}
+html body.staff-header .mode-badge:hover{background:var(--v50-tint);color:var(--teal-deep)}
 html body.staff-header .shell-main{grid-area:main;min-width:0;padding:6px 28px 60px}
 html body.staff-header .sb-toggle{display:flex;position:absolute;right:10px;top:18px;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--teal-deep);align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0}
 html body.staff-header .sb-show{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--teal-deep);align-items:center;justify-content:center;cursor:pointer;font-size:16px;padding:0;margin-right:auto}
 html body.staff-header.sb-hidden .sb-show{display:flex}
-html body.staff-header.sb-hidden .app{grid-template-columns:0 minmax(0,1fr)}
-html body.staff-header.sb-hidden .brand,html body.staff-header.sb-hidden nav.tabs{display:none}
+@media (min-width:901px){
+  html body.staff-header.sb-hidden .app{grid-template-columns:0 minmax(0,1fr)}
+  html body.staff-header.sb-hidden .brand,html body.staff-header.sb-hidden nav.tabs,html body.staff-header.sb-hidden .sb-extra{display:none!important}
+}
 @media (max-width:900px){
   html body.staff-header .app{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "main"}
   html body.staff-header .brand,html body.staff-header nav.tabs{position:fixed;left:0;width:272px;z-index:60;transform:translateX(-105%);transition:transform .2s}
@@ -1467,7 +1470,7 @@ html body.staff-header.sb-hidden .brand,html body.staff-header.sb-hidden nav.tab
   html body.staff-header.sb-hidden nav.tabs{display:flex}
   html body.staff-header.sb-hidden .app{grid-template-columns:minmax(0,1fr)}
   html body.staff-header .sb-show{display:flex}
-  html body.staff-header.sb-open::after{content:"";position:fixed;inset:0;background:rgba(75,56,50,.45);z-index:55}
+  html body.staff-header.sb-open::after{content:"";position:fixed;inset:0;background:rgba(22,34,46,.45);z-index:55}
   html body.staff-header .shell-main{padding:6px 14px 60px}
   html body.staff-header .head-right{padding:12px 14px}
 }
@@ -1475,19 +1478,18 @@ html body.staff-header.sb-hidden .brand,html body.staff-header.sb-hidden nav.tab
 /* ===== v50 — AGENDA: coluna lateral com calendario do mes e lista de profissionais ===== */
 .sb-extra{display:none}
 html body.staff-header .sb-extra{display:block;grid-area:extra;background:#fff;border-right:1px solid var(--line);padding:6px 14px 20px}
-html body.staff-header.sb-hidden .sb-extra{display:none}
 .sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin:12px 4px 6px}
 #sbMini .mc-h{display:flex;align-items:center;justify-content:space-between;font-size:.82rem;margin:0 0 6px}
 #sbMini .mc-h button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--teal-deep);cursor:pointer;padding:0}
 #sbMini .mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.72rem}
 #sbMini .mc-g span{color:var(--ink-soft);font-size:.62rem;padding:2px 0}
 #sbMini .mc-g button{border:0;background:none;padding:5px 0;border-radius:6px;cursor:pointer;color:var(--ink);font:inherit}
-#sbMini .mc-g button.wk{background:#F3D9D2}
+#sbMini .mc-g button.wk{background:var(--v50-tint)}
 #sbMini .mc-g button.td{background:var(--teal-deep);color:#fff;font-weight:700}
 html body.staff-header #adminClinicTabs{flex-direction:column;align-items:stretch;gap:2px;margin:0;padding:0;border:0;overflow:visible}
 html body.staff-header #adminClinicTabs button{text-align:left;border:0;border-radius:8px;padding:8px 10px;margin:0;background:none;font-size:.86rem;font-weight:500;color:var(--ink)}
 html body.staff-header #adminClinicTabs button:hover{background:var(--sand-dim)}
-html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:var(--teal-deep);font-weight:600}
+html body.staff-header #adminClinicTabs button.active{background:var(--v50-tint);color:var(--teal-deep);font-weight:600}
 @media (max-width:900px){
   html body.staff-header .app{grid-template-areas:"top" "extra" "main";grid-template-rows:auto auto 1fr}
   html body.staff-header .sb-extra,html body.staff-header.sb-hidden .sb-extra{display:block;border-right:0;border-bottom:1px solid var(--line);padding:8px 14px}
@@ -1503,12 +1505,12 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
 .lh .pf-bar{display:flex}
 .pf-sel{flex:1;max-width:280px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;color:var(--ink)}
 .pf-head{display:flex;align-items:center;gap:14px}
-.pf-av{width:52px;height:52px;border-radius:50%;background:#F3D9D2;color:var(--teal-deep);font-weight:600;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:none}
+.pf-av{width:52px;height:52px;border-radius:50%;background:var(--v50-tint);color:var(--teal-deep);font-weight:600;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:none}
 .pf-id{flex:1;min-width:0}.pf-id h2{margin:0}.pf-sub{font-size:.8rem;color:var(--ink-soft)}
 .pf-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:14px 0;overflow-x:auto}
 .pf-tabs button{border:0;background:none;padding:9px 14px;font:inherit;font-weight:600;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
 .pf-tabs button.on{color:var(--teal-deep);box-shadow:inset 0 -2px var(--teal-deep)}
-.pf-tabs i{font-style:normal;font-size:.7rem;background:#F3D9D2;border-radius:8px;padding:1px 6px;margin-left:4px}
+.pf-tabs i{font-style:normal;font-size:.7rem;background:var(--v50-tint);border-radius:8px;padding:1px 6px;margin-left:4px}
 .pf-stats{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .pf-stat{flex:1;min-width:130px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 .pf-stat b{display:block;font-family:var(--serif);font-size:1.25rem;color:var(--teal-deep);font-weight:600}
@@ -1520,7 +1522,7 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
 .pf-more{margin-top:8px}
 
 /* ===== v50 — DISPONIBILIDADE, FINANCEIRO e CONFIGURACOES ===== */
-#panel-availability.active{display:grid;grid-template-columns:360px minmax(0,1fr);gap:0 22px;align-items:start}
+#panel-availability.active{display:grid;grid-template-columns:minmax(380px,420px) minmax(0,1fr);gap:0 22px;align-items:start}
 #panel-availability .avail-form{grid-column:1;grid-row:1 / span 5;margin-bottom:0}
 #panel-availability > .section-label,#panel-availability > #weekdayOwnersList,#panel-availability > #availCalendars,#panel-availability > .avail-chips{grid-column:2}
 #panel-availability > .section-label:nth-of-type(2){grid-row:4}
@@ -1531,7 +1533,10 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
 .avail-chips{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
 .avail-chips button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:500;color:var(--ink);cursor:pointer}
 .avail-chips button.on{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
-@media (max-width:900px){#panel-availability.active{display:block}}
+#panel-availability .avail-range{gap:8px}
+#panel-availability .avail-range .field{min-width:0}
+#panel-availability .avail-range input[type=date]{width:100%;min-width:0;padding-left:10px;padding-right:8px;font-size:.92rem}
+@media (max-width:1100px){#panel-availability.active{display:block}}
 .fin-kpis{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}
 .fin-kpi{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 .fin-kpi span{display:block;font-size:.72rem;color:var(--ink-soft)}
@@ -1542,13 +1547,22 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
 .fin-tabs button.on,.cfg-tabs button.on{color:var(--teal-deep);box-shadow:inset 0 -2px var(--teal-deep)}
 .cfg-pane[hidden]{display:none}
 #panel-settings .settings-submit-row{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 18px;margin-top:16px;z-index:5}
-.clinic-card.cc-acc > .clinic-card-head{cursor:pointer}
+.clinic-card.cc-acc > .clinic-card-head{cursor:pointer;display:flex;align-items:center;gap:12px}
+.clinic-card.cc-acc > .clinic-card-head > :first-child{flex:1;min-width:0}
+.clinic-card.cc-acc > .clinic-card-head > button{margin-left:auto}
 .clinic-card.cc-acc > .clinic-card-head::after{content:"\2304";margin-left:10px;color:var(--ink-soft)}
 .clinic-card.cc-acc.open > .clinic-card-head::after{content:"\2303"}
 .clinic-card.cc-acc:not(.open) > .cc-body{display:none}
 
 /* ===== v50 — PACIENTE: login com painel de marca e agendamento com calendario do mes ===== */
 .auth-hero,#bkCal{display:none}
+html body:not(.staff-header) #todayLabel{display:none}
+body.pub-booking #publicBanner{display:none}
+#publicBookingScreen .bk-hero .banner-specialty-switch{margin-left:auto;align-items:center;gap:8px}
+#publicBookingScreen .bk-hero .banner-specialty-switch label{color:rgba(255,255,255,.85);font-size:.78rem;font-weight:600}
+#publicBookingScreen .bk-hero .banner-specialty-switch select{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:8px 10px;font:inherit}
+#publicBookingScreen .bk-hero .banner-specialty-switch select option{color:var(--ink)}
+@media (max-width:900px){#publicBookingScreen .bk-hero .banner-specialty-switch{margin:10px 0 0}}
 #publicBookingScreen .bk-hero{background:var(--teal-deep)}
 @media (min-width:901px){
   #publicAuthScreen.auth-wrap{max-width:1000px}
@@ -1563,21 +1577,24 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
   #publicAuthScreen .auth-main{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
   #publicAuthScreen .auth-card{border:0;box-shadow:none;padding:0}
   #publicBookingScreen{max-width:1100px}
-  #publicBookingScreen .bk-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
-  #publicBookingScreen .bk-body{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0 32px;align-items:start}
+  #publicBookingScreen .bk-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:16px 28px 14px;margin-bottom:18px}
+  #publicBookingScreen .bk-hero h2{font-size:1.65rem}
+  #publicBookingScreen .bk-hero .bk-next{margin-top:10px;padding:9px 14px}
+  #publicBookingScreen .bk-hero-tr{position:absolute;top:14px;right:22px;display:flex;align-items:center;gap:12px;z-index:2}
+  #publicBookingScreen .bk-hero-tr .banner-specialty-switch{margin:0}
+  #publicBookingScreen .bk-body{display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:auto 1fr auto;gap:0 32px;align-items:start}
   #publicBookingScreen .bk-body > .bk-section-head,#publicBookingScreen .bk-body > .bk-strip{display:none}
-  #bkCal{display:block;grid-column:1;grid-row:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
-  #publicBookingScreen .future-date-inline{grid-column:1;grid-row:2}
-  #publicBookingScreen #futureDateHint{grid-column:1;grid-row:3}
-  #publicBookingScreen #slotListLabel{grid-column:2;grid-row:1;margin-top:0!important}
-  #publicBookingScreen #slotList{grid-column:2;grid-row:2 / span 2;display:block}
-  #publicBookingScreen #myApptsWrap{grid-column:1 / -1;grid-row:4}
+  #bkCal{display:block;grid-column:1;grid-row:1 / span 2;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+  #publicBookingScreen .future-date-inline,#publicBookingScreen #futureDateHint{display:none}
+  #publicBookingScreen #slotListLabel{grid-column:2;grid-row:1;margin-top:0!important;text-align:center}
+  #publicBookingScreen #slotList{grid-column:2;grid-row:2;display:block}
+  #publicBookingScreen #myApptsWrap{grid-column:1 / -1;grid-row:3;margin-top:18px}
   #bkCal .mc-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;font-weight:600}
   #bkCal .mc-h button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--teal-deep);cursor:pointer;padding:0}
   #bkCal .mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:.85rem}
   #bkCal .mc-g span{color:var(--ink-soft);font-size:.7rem;padding:2px 0}
-  #bkCal .mc-g button{border:0;background:none;padding:8px 0;border-radius:8px;font:inherit;color:#C9AEA5;cursor:default}
-  #bkCal .mc-g button.a{background:#F3D9D2;color:var(--ink);cursor:pointer}
+  #bkCal .mc-g button{border:0;background:none;padding:8px 0;border-radius:8px;font:inherit;color:#A8B4C0;cursor:default}
+  #bkCal .mc-g button.a{background:var(--v50-tint);color:var(--ink);cursor:pointer}
   #bkCal .mc-g button.t{background:var(--teal-deep);color:#fff;font-weight:700}
 }
 
@@ -1585,7 +1602,7 @@ html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:v
 #cfgDiag .dg-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:.86rem}
 #cfgDiag .dg-b{flex:none;min-width:84px;text-align:center;border-radius:6px;padding:2px 8px;font-size:.7rem;font-weight:700;letter-spacing:.04em}
 #cfgDiag .dg-ok{background:#E7F0E4;color:#2F6B3F}#cfgDiag .dg-fail{background:#FBDEDB;color:#B03A2E}
-#cfgDiag .dg-warn{background:#FBEAD1;color:#8A5A12}#cfgDiag .dg-skip{background:#F0E4DF;color:#78605A}
+#cfgDiag .dg-warn{background:#FFF1D0;color:#8A5A12}#cfgDiag .dg-skip{background:var(--sand-dim);color:var(--ink-soft)}
 #cfgDiag .dg-g{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sienna);margin:16px 0 2px;font-weight:700}
 #cfgDiag .dg-n{font-weight:600}#cfgDiag .dg-m{color:var(--ink-soft)}
 #cfgDiag textarea{width:100%;min-height:120px;margin-top:10px;font:.78rem monospace}
@@ -4413,7 +4430,13 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
   }catch(err){
     console.error('Falha no login', err);
     const motivo = String((err && err.message) || err);
-    errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
+    if(err && err.status === 429){
+      let seg = 0; try{ seg = Number(JSON.parse(err.body).retry_after_seconds) || 0; }catch(e2){}
+      const min = Math.max(1, Math.ceil(seg / 60));
+      errEl.textContent = 'Muitas tentativas incorretas. Aguarde cerca de ' + min + ' minuto' + (min > 1 ? 's' : '') + ' e tente de novo.';
+    } else {
+      errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
+    }
     errEl.classList.add('show');
   }finally{
     if(submitBtn) submitBtn.disabled = false;
@@ -5511,7 +5534,8 @@ document.getElementById('patientForm').addEventListener('submit',(e)=>{
    Fotos são comprimidas automaticamente antes de enviar. Visível e
    editável só pelo perfil profissional. */
 const WORKER_URL = 'https://square-cloud-9f98.agendaamarize092026.workers.dev'; // MODELO: aponte pro seu Cloudflare Worker quando for usar anexos
-const WORKER_SHARED_SECRET = 'B9pbNgj}4B3ikYa~^,%;F&[8fU9d_-4W'; // o mesmo valor do secret SHARED_SECRET no Worker
+// (O segredo fixo que ficava aqui foi REMOVIDO: qualquer visitante conseguia ler. Os anexos agora usam a
+// sessão de quem fez login, e o login é protegido por limite de tentativas no Worker.)
 const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024; // 20MB, já considerando a compressão de fotos
 
 function humanFileSize(bytes){
@@ -5521,19 +5545,42 @@ function humanFileSize(bytes){
   return (bytes/(1024*1024)).toFixed(1) + ' MB';
 }
 
+// Token da sessão atual (emitido pelo Worker no login). Lido na hora da chamada, nunca guardado em variável.
+async function getWorkerSessionToken(){
+  if(!sbClient) return null;
+  try{
+    const { data } = await sbClient.auth.getSession();
+    return (data && data.session && data.session.access_token) || null;
+  }catch(e){ return null; }
+}
+// Rotas /auth/* são públicas (é o login). As demais (anexos) exigem a sessão de admin/profissional.
 async function callWorker(path, options){
-  const res = await fetch(WORKER_URL + path, {
-    ...options,
-    headers: {
-      'Authorization': 'Bearer ' + WORKER_SHARED_SECRET,
-      ...(options && options.headers)
+  const headers = { ...((options && options.headers) || {}) };
+  const isAuthRoute = path.startsWith('/auth/');
+  if(!isAuthRoute){
+    const token = await getWorkerSessionToken();
+    if(!token){
+      const err = new Error(sbClient ? 'Sessão ausente ou expirada' : 'Anexos só funcionam com o sistema online (com banco de dados)');
+      err.status = 401; err.sessionExpired = !!sbClient; err.offlineMode = !sbClient;
+      throw err;
     }
-  });
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+  const res = await fetch(WORKER_URL + path, { ...(options || {}), headers });
   if(!res.ok){
     const body = await res.text().catch(()=> '');
-    throw new Error('Worker respondeu ' + res.status + ': ' + body);
+    const err = new Error('Worker respondeu ' + res.status + ': ' + body);
+    err.status = res.status; err.body = body;
+    if(res.status === 401 && !isAuthRoute) err.sessionExpired = true;
+    throw err;
   }
   return res.json();
+}
+// Mensagem amigável para falhas de anexos (sessão vencida, modo sem banco ou erro genérico).
+function attachmentErrorText(e, fallback){
+  if(e && e.offlineMode) return 'Anexos só funcionam com o sistema online (com banco de dados).';
+  if(e && e.sessionExpired) return 'Sua sessão expirou. Saia e entre de novo para usar os anexos.';
+  return fallback;
 }
 
 // Redimensiona/recomprime fotos antes de enviar (fotos de celular costumam
@@ -5663,7 +5710,7 @@ async function uploadAttachment(patientId, file){
     statusEl.textContent = 'Anexo salvo.';
   }catch(e){
     console.error('Falha ao anexar arquivo', e);
-    statusEl.textContent = 'Falha ao enviar o arquivo. Tente novamente.';
+    statusEl.textContent = attachmentErrorText(e, 'Falha ao enviar o arquivo. Tente novamente.');
   }
 }
 
@@ -5690,7 +5737,7 @@ async function downloadAttachment(att){
     statusEl.textContent = '';
   }catch(e){
     console.error('Falha ao baixar anexo', e);
-    statusEl.textContent = 'Falha ao baixar o anexo.';
+    statusEl.textContent = attachmentErrorText(e, 'Falha ao baixar o anexo.');
   }
 }
 
@@ -5707,7 +5754,7 @@ async function deleteAttachment(patientId, att){
     await loadAndRenderAttachments(patientId);
   }catch(e){
     console.error('Falha ao excluir anexo', e);
-    statusEl.textContent = 'Falha ao excluir o anexo.';
+    statusEl.textContent = attachmentErrorText(e, 'Falha ao excluir o anexo.');
   }
 }
 
@@ -10538,7 +10585,7 @@ initFinanceiro();
     var sel=selDate(),key=agendaShowAll+'|'+fmtDate(sel);
     if(!month||key!==lastKey){month=new Date(sel.getFullYear(),sel.getMonth(),1);lastKey=key;}
     var y=month.getFullYear(),m=month.getMonth(),pad=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),today=fmtDate(new Date());
-    var from=agendaShowAll?fmtDate(sel):fmtDate(sel),to=agendaShowAll?from:fmtDate(new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+6));
+    var nd=(DATA.settings&&DATA.settings.allowSaturday===false)?5:6,from=fmtDate(sel),to=agendaShowAll?from:fmtDate(new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+nd-1));
     var h='<div class="mc-h"><button type="button" data-m="-1" aria-label="M\u00eas anterior">\u2039</button><b>'+MES[m]+' de '+y+'</b><button type="button" data-m="1" aria-label="Pr\u00f3ximo m\u00eas">\u203a</button></div><div class="mc-g">';
     'DSTQQSS'.split('').forEach(function(c){h+='<span>'+c+'</span>';});
     for(var i=0;i<pad;i++)h+='<span></span>';
@@ -10746,6 +10793,16 @@ initFinanceiro();
   hero.appendChild(top);main.appendChild(tabs);main.appendChild(card);split.appendChild(hero);split.appendChild(main);sc.appendChild(split);
   var oP=window.renderPublicArea;
   window.renderPublicArea=function(){var r=oP.apply(this,arguments);try{hb.textContent=(DATA.settings&&DATA.settings.clinicName)||'';}catch(e){}return r;};
+  var sw=document.getElementById('specialtySwitchWrap'),hr=document.querySelector('#publicBookingScreen .bk-hero'),lo=document.getElementById('logoutBtn'),htop=hr.querySelector('.bk-hero-top'),tr=el('div','bk-hero-tr');
+  function place(){
+    var desk=window.matchMedia&&window.matchMedia('(min-width:901px)').matches;
+    if(desk){tr.appendChild(sw);tr.appendChild(lo);if(tr.parentNode!==hr)hr.appendChild(tr);}
+    else{htop.appendChild(lo);hr.appendChild(sw);if(tr.parentNode)tr.parentNode.removeChild(tr);}
+  }
+  place();window.addEventListener('resize',place);
+  var bs=document.getElementById('publicBookingScreen');
+  function flag(){document.body.classList.toggle('pub-booking',bs.style.display==='block');}
+  new MutationObserver(flag).observe(bs,{attributes:true,attributeFilter:['style']});flag();
   /* calendario do mes (so aparece no desktop; no celular continua a faixa de dias) */
   var body=document.querySelector('#publicBookingScreen .bk-body'),cal=el('div');cal.id='bkCal';
   body.insertBefore(cal,body.querySelector('.future-date-inline'));
