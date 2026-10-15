@@ -1522,7 +1522,7 @@ html body.staff-header #adminClinicTabs button.active{background:var(--v50-tint)
 .pf-more{margin-top:8px}
 
 /* ===== v50 — DISPONIBILIDADE, FINANCEIRO e CONFIGURACOES ===== */
-#panel-availability.active{display:grid;grid-template-columns:minmax(380px,420px) minmax(0,1fr);gap:0 22px;align-items:start}
+#panel-availability.active{display:grid;grid-template-columns:360px minmax(0,1fr);gap:0 22px;align-items:start}
 #panel-availability .avail-form{grid-column:1;grid-row:1 / span 5;margin-bottom:0}
 #panel-availability > .section-label,#panel-availability > #weekdayOwnersList,#panel-availability > #availCalendars,#panel-availability > .avail-chips{grid-column:2}
 #panel-availability > .section-label:nth-of-type(2){grid-row:4}
@@ -1533,10 +1533,7 @@ html body.staff-header #adminClinicTabs button.active{background:var(--v50-tint)
 .avail-chips{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
 .avail-chips button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:500;color:var(--ink);cursor:pointer}
 .avail-chips button.on{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
-#panel-availability .avail-range{gap:8px}
-#panel-availability .avail-range .field{min-width:0}
-#panel-availability .avail-range input[type=date]{width:100%;min-width:0;padding-left:10px;padding-right:8px;font-size:.92rem}
-@media (max-width:1100px){#panel-availability.active{display:block}}
+@media (max-width:900px){#panel-availability.active{display:block}}
 .fin-kpis{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}
 .fin-kpi{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 .fin-kpi span{display:block;font-size:.72rem;color:var(--ink-soft)}
@@ -1547,9 +1544,7 @@ html body.staff-header #adminClinicTabs button.active{background:var(--v50-tint)
 .fin-tabs button.on,.cfg-tabs button.on{color:var(--teal-deep);box-shadow:inset 0 -2px var(--teal-deep)}
 .cfg-pane[hidden]{display:none}
 #panel-settings .settings-submit-row{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 18px;margin-top:16px;z-index:5}
-.clinic-card.cc-acc > .clinic-card-head{cursor:pointer;display:flex;align-items:center;gap:12px}
-.clinic-card.cc-acc > .clinic-card-head > :first-child{flex:1;min-width:0}
-.clinic-card.cc-acc > .clinic-card-head > button{margin-left:auto}
+.clinic-card.cc-acc > .clinic-card-head{cursor:pointer}
 .clinic-card.cc-acc > .clinic-card-head::after{content:"\2304";margin-left:10px;color:var(--ink-soft)}
 .clinic-card.cc-acc.open > .clinic-card-head::after{content:"\2303"}
 .clinic-card.cc-acc:not(.open) > .cc-body{display:none}
@@ -1557,7 +1552,6 @@ html body.staff-header #adminClinicTabs button.active{background:var(--v50-tint)
 /* ===== v50 — PACIENTE: login com painel de marca e agendamento com calendario do mes ===== */
 .auth-hero,#bkCal{display:none}
 html body:not(.staff-header) #todayLabel{display:none}
-body.pub-booking #publicBanner{display:none}
 #publicBookingScreen .bk-hero .banner-specialty-switch{margin-left:auto;align-items:center;gap:8px}
 #publicBookingScreen .bk-hero .banner-specialty-switch label{color:rgba(255,255,255,.85);font-size:.78rem;font-weight:600}
 #publicBookingScreen .bk-hero .banner-specialty-switch select{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:8px;padding:8px 10px;font:inherit}
@@ -1577,11 +1571,7 @@ body.pub-booking #publicBanner{display:none}
   #publicAuthScreen .auth-main{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
   #publicAuthScreen .auth-card{border:0;box-shadow:none;padding:0}
   #publicBookingScreen{max-width:1100px}
-  #publicBookingScreen .bk-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:16px 28px 14px;margin-bottom:18px}
-  #publicBookingScreen .bk-hero h2{font-size:1.65rem}
-  #publicBookingScreen .bk-hero .bk-next{margin-top:10px;padding:9px 14px}
-  #publicBookingScreen .bk-hero-tr{position:absolute;top:14px;right:22px;display:flex;align-items:center;gap:12px;z-index:2}
-  #publicBookingScreen .bk-hero-tr .banner-specialty-switch{margin:0}
+  #publicBookingScreen .bk-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
   #publicBookingScreen .bk-body{display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:auto 1fr auto;gap:0 32px;align-items:start}
   #publicBookingScreen .bk-body > .bk-section-head,#publicBookingScreen .bk-body > .bk-strip{display:none}
   #bkCal{display:block;grid-column:1;grid-row:1 / span 2;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
@@ -4430,13 +4420,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
   }catch(err){
     console.error('Falha no login', err);
     const motivo = String((err && err.message) || err);
-    if(err && err.status === 429){
-      let seg = 0; try{ seg = Number(JSON.parse(err.body).retry_after_seconds) || 0; }catch(e2){}
-      const min = Math.max(1, Math.ceil(seg / 60));
-      errEl.textContent = 'Muitas tentativas incorretas. Aguarde cerca de ' + min + ' minuto' + (min > 1 ? 's' : '') + ' e tente de novo.';
-    } else {
-      errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
-    }
+    errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
     errEl.classList.add('show');
   }finally{
     if(submitBtn) submitBtn.disabled = false;
@@ -5534,8 +5518,7 @@ document.getElementById('patientForm').addEventListener('submit',(e)=>{
    Fotos são comprimidas automaticamente antes de enviar. Visível e
    editável só pelo perfil profissional. */
 const WORKER_URL = 'https://square-cloud-9f98.agendaamarize092026.workers.dev'; // MODELO: aponte pro seu Cloudflare Worker quando for usar anexos
-// (O segredo fixo que ficava aqui foi REMOVIDO: qualquer visitante conseguia ler. Os anexos agora usam a
-// sessão de quem fez login, e o login é protegido por limite de tentativas no Worker.)
+const WORKER_SHARED_SECRET = 'B9pbNgj}4B3ikYa~^,%;F&[8fU9d_-4W'; // o mesmo valor do secret SHARED_SECRET no Worker
 const ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024; // 20MB, já considerando a compressão de fotos
 
 function humanFileSize(bytes){
@@ -5545,42 +5528,19 @@ function humanFileSize(bytes){
   return (bytes/(1024*1024)).toFixed(1) + ' MB';
 }
 
-// Token da sessão atual (emitido pelo Worker no login). Lido na hora da chamada, nunca guardado em variável.
-async function getWorkerSessionToken(){
-  if(!sbClient) return null;
-  try{
-    const { data } = await sbClient.auth.getSession();
-    return (data && data.session && data.session.access_token) || null;
-  }catch(e){ return null; }
-}
-// Rotas /auth/* são públicas (é o login). As demais (anexos) exigem a sessão de admin/profissional.
 async function callWorker(path, options){
-  const headers = { ...((options && options.headers) || {}) };
-  const isAuthRoute = path.startsWith('/auth/');
-  if(!isAuthRoute){
-    const token = await getWorkerSessionToken();
-    if(!token){
-      const err = new Error(sbClient ? 'Sessão ausente ou expirada' : 'Anexos só funcionam com o sistema online (com banco de dados)');
-      err.status = 401; err.sessionExpired = !!sbClient; err.offlineMode = !sbClient;
-      throw err;
+  const res = await fetch(WORKER_URL + path, {
+    ...options,
+    headers: {
+      'Authorization': 'Bearer ' + WORKER_SHARED_SECRET,
+      ...(options && options.headers)
     }
-    headers['Authorization'] = 'Bearer ' + token;
-  }
-  const res = await fetch(WORKER_URL + path, { ...(options || {}), headers });
+  });
   if(!res.ok){
     const body = await res.text().catch(()=> '');
-    const err = new Error('Worker respondeu ' + res.status + ': ' + body);
-    err.status = res.status; err.body = body;
-    if(res.status === 401 && !isAuthRoute) err.sessionExpired = true;
-    throw err;
+    throw new Error('Worker respondeu ' + res.status + ': ' + body);
   }
   return res.json();
-}
-// Mensagem amigável para falhas de anexos (sessão vencida, modo sem banco ou erro genérico).
-function attachmentErrorText(e, fallback){
-  if(e && e.offlineMode) return 'Anexos só funcionam com o sistema online (com banco de dados).';
-  if(e && e.sessionExpired) return 'Sua sessão expirou. Saia e entre de novo para usar os anexos.';
-  return fallback;
 }
 
 // Redimensiona/recomprime fotos antes de enviar (fotos de celular costumam
@@ -5710,7 +5670,7 @@ async function uploadAttachment(patientId, file){
     statusEl.textContent = 'Anexo salvo.';
   }catch(e){
     console.error('Falha ao anexar arquivo', e);
-    statusEl.textContent = attachmentErrorText(e, 'Falha ao enviar o arquivo. Tente novamente.');
+    statusEl.textContent = 'Falha ao enviar o arquivo. Tente novamente.';
   }
 }
 
@@ -5737,7 +5697,7 @@ async function downloadAttachment(att){
     statusEl.textContent = '';
   }catch(e){
     console.error('Falha ao baixar anexo', e);
-    statusEl.textContent = attachmentErrorText(e, 'Falha ao baixar o anexo.');
+    statusEl.textContent = 'Falha ao baixar o anexo.';
   }
 }
 
@@ -5754,7 +5714,7 @@ async function deleteAttachment(patientId, att){
     await loadAndRenderAttachments(patientId);
   }catch(e){
     console.error('Falha ao excluir anexo', e);
-    statusEl.textContent = attachmentErrorText(e, 'Falha ao excluir o anexo.');
+    statusEl.textContent = 'Falha ao excluir o anexo.';
   }
 }
 
@@ -10793,16 +10753,7 @@ initFinanceiro();
   hero.appendChild(top);main.appendChild(tabs);main.appendChild(card);split.appendChild(hero);split.appendChild(main);sc.appendChild(split);
   var oP=window.renderPublicArea;
   window.renderPublicArea=function(){var r=oP.apply(this,arguments);try{hb.textContent=(DATA.settings&&DATA.settings.clinicName)||'';}catch(e){}return r;};
-  var sw=document.getElementById('specialtySwitchWrap'),hr=document.querySelector('#publicBookingScreen .bk-hero'),lo=document.getElementById('logoutBtn'),htop=hr.querySelector('.bk-hero-top'),tr=el('div','bk-hero-tr');
-  function place(){
-    var desk=window.matchMedia&&window.matchMedia('(min-width:901px)').matches;
-    if(desk){tr.appendChild(sw);tr.appendChild(lo);if(tr.parentNode!==hr)hr.appendChild(tr);}
-    else{htop.appendChild(lo);hr.appendChild(sw);if(tr.parentNode)tr.parentNode.removeChild(tr);}
-  }
-  place();window.addEventListener('resize',place);
-  var bs=document.getElementById('publicBookingScreen');
-  function flag(){document.body.classList.toggle('pub-booking',bs.style.display==='block');}
-  new MutationObserver(flag).observe(bs,{attributes:true,attributeFilter:['style']});flag();
+  var sw=document.getElementById('specialtySwitchWrap'),hr=document.querySelector('#publicBookingScreen .bk-hero');if(sw&&hr)hr.appendChild(sw);
   /* calendario do mes (so aparece no desktop; no celular continua a faixa de dias) */
   var body=document.querySelector('#publicBookingScreen .bk-body'),cal=el('div');cal.id='bkCal';
   body.insertBefore(cal,body.querySelector('.future-date-inline'));
