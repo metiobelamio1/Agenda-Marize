@@ -1427,6 +1427,203 @@ body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-colo
   #publicBookingScreen .bk-strip{margin-bottom:42px;}
   .bk-strip-arrow{width:22px;} .bk-strip-arrow svg{width:22px;height:22px;}
 }
+
+/* ===== v50 — MOLDURA COM BARRA LATERAL (administrador, recepção e profissional) =====
+   Só vale com a classe staff-header no <body>; o acesso do paciente não muda.
+   A barra lateral pode ser ocultada (botão «) e voltar (botão ☰); a escolha fica
+   guardada neste navegador. No celular ela vira uma gaveta. */
+.sb-toggle,.sb-show{display:none}
+html body.staff-header{background:var(--sand)}
+html body.staff-header .app{max-width:none;padding:0;display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:auto auto 1fr;grid-template-areas:"brand top" "nav main" "extra main";min-height:100vh}
+html body.staff-header header.top{display:contents}
+html body.staff-header .brand{grid-area:brand;position:relative;background:#fff;border-right:1px solid var(--line);padding:18px 46px 12px 16px;grid-template-columns:38px auto;column-gap:10px;margin:0}
+html body.staff-header .brand::before{width:38px;height:38px;background:var(--teal-deep) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 46'%3E%3Cpath d='M20 11h6v9h9v6h-9v9h-6v-9h-9v-6h9z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat}
+html body.staff-header .brand h1{color:var(--teal-deep);font-size:1.12rem}
+html body.staff-header .brand .specialty{color:var(--ink-soft)}
+html body.staff-header nav.tabs{grid-area:nav;flex-direction:column;align-items:stretch;gap:2px;margin:0;padding:6px 12px 20px;background:#fff;border:0;border-right:1px solid var(--line);overflow:visible}
+html body.staff-header nav.tabs button{text-align:left;border:0;border-radius:8px;padding:9px 12px;margin:0;font-size:.9rem;font-weight:500;color:var(--ink);background:none}
+html body.staff-header nav.tabs button:hover{background:var(--sand-dim)}
+html body.staff-header nav.tabs button.active{background:#F3D9D2;color:var(--teal-deep);font-weight:600}
+html body.staff-header .head-right{grid-area:top;flex-direction:row;justify-content:flex-end;align-items:center;gap:14px;padding:14px 28px}
+html body.staff-header .today{color:var(--ink-soft)}
+html body.staff-header .alerts-bell{background:#fff;border-color:var(--teal-deep);color:var(--teal-deep)}
+html body.staff-header .alerts-bell:hover{background:#F3D9D2}
+html body.staff-header .alerts-badge{outline-color:var(--sand)}
+html body.staff-header .mode-badge{background:#fff;border:1.5px solid var(--line);color:var(--teal-deep)}
+html body.staff-header .mode-badge:hover{background:#F3D9D2;color:var(--teal-deep)}
+html body.staff-header .shell-main{grid-area:main;min-width:0;padding:6px 28px 60px}
+html body.staff-header .sb-toggle{display:flex;position:absolute;right:10px;top:18px;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--teal-deep);align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0}
+html body.staff-header .sb-show{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--teal-deep);align-items:center;justify-content:center;cursor:pointer;font-size:16px;padding:0;margin-right:auto}
+html body.staff-header.sb-hidden .sb-show{display:flex}
+html body.staff-header.sb-hidden .app{grid-template-columns:0 minmax(0,1fr)}
+html body.staff-header.sb-hidden .brand,html body.staff-header.sb-hidden nav.tabs{display:none}
+@media (max-width:900px){
+  html body.staff-header .app{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "main"}
+  html body.staff-header .brand,html body.staff-header nav.tabs{position:fixed;left:0;width:272px;z-index:60;transform:translateX(-105%);transition:transform .2s}
+  html body.staff-header .brand{top:0;height:76px;display:grid}
+  html body.staff-header nav.tabs{top:76px;bottom:0;display:flex;overflow-y:auto}
+  html body.staff-header.sb-open .brand,html body.staff-header.sb-open nav.tabs{transform:none}
+  html body.staff-header.sb-hidden .brand{display:grid}
+  html body.staff-header.sb-hidden nav.tabs{display:flex}
+  html body.staff-header.sb-hidden .app{grid-template-columns:minmax(0,1fr)}
+  html body.staff-header .sb-show{display:flex}
+  html body.staff-header.sb-open::after{content:"";position:fixed;inset:0;background:rgba(75,56,50,.45);z-index:55}
+  html body.staff-header .shell-main{padding:6px 14px 60px}
+  html body.staff-header .head-right{padding:12px 14px}
+}
+
+/* ===== v50 — AGENDA: coluna lateral com calendario do mes e lista de profissionais ===== */
+.sb-extra{display:none}
+html body.staff-header .sb-extra{display:block;grid-area:extra;background:#fff;border-right:1px solid var(--line);padding:6px 14px 20px}
+html body.staff-header.sb-hidden .sb-extra{display:none}
+.sb-h{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin:12px 4px 6px}
+#sbMini .mc-h{display:flex;align-items:center;justify-content:space-between;font-size:.82rem;margin:0 0 6px}
+#sbMini .mc-h button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--teal-deep);cursor:pointer;padding:0}
+#sbMini .mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.72rem}
+#sbMini .mc-g span{color:var(--ink-soft);font-size:.62rem;padding:2px 0}
+#sbMini .mc-g button{border:0;background:none;padding:5px 0;border-radius:6px;cursor:pointer;color:var(--ink);font:inherit}
+#sbMini .mc-g button.wk{background:#F3D9D2}
+#sbMini .mc-g button.td{background:var(--teal-deep);color:#fff;font-weight:700}
+html body.staff-header #adminClinicTabs{flex-direction:column;align-items:stretch;gap:2px;margin:0;padding:0;border:0;overflow:visible}
+html body.staff-header #adminClinicTabs button{text-align:left;border:0;border-radius:8px;padding:8px 10px;margin:0;background:none;font-size:.86rem;font-weight:500;color:var(--ink)}
+html body.staff-header #adminClinicTabs button:hover{background:var(--sand-dim)}
+html body.staff-header #adminClinicTabs button.active{background:#F3D9D2;color:var(--teal-deep);font-weight:600}
+@media (max-width:900px){
+  html body.staff-header .app{grid-template-areas:"top" "extra" "main";grid-template-rows:auto auto 1fr}
+  html body.staff-header .sb-extra,html body.staff-header.sb-hidden .sb-extra{display:block;border-right:0;border-bottom:1px solid var(--line);padding:8px 14px}
+  #sbMiniWrap,.sb-h{display:none!important}
+  html body.staff-header #adminClinicTabs{flex-direction:row;overflow-x:auto}
+}
+
+/* ===== v50 — PACIENTES: ficha em abas (Resumo, Histórico, Anexos, Dados) e lista ocultável ===== */
+.patients-layout.lh{grid-template-columns:minmax(0,1fr)}
+.patients-layout.lh>.pt-list{display:none}
+.pt-hide{width:100%;margin-bottom:10px}
+.pf-bar{display:none;gap:8px;align-items:center;margin-bottom:12px}
+.lh .pf-bar{display:flex}
+.pf-sel{flex:1;max-width:280px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;color:var(--ink)}
+.pf-head{display:flex;align-items:center;gap:14px}
+.pf-av{width:52px;height:52px;border-radius:50%;background:#F3D9D2;color:var(--teal-deep);font-weight:600;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:none}
+.pf-id{flex:1;min-width:0}.pf-id h2{margin:0}.pf-sub{font-size:.8rem;color:var(--ink-soft)}
+.pf-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:14px 0;overflow-x:auto}
+.pf-tabs button{border:0;background:none;padding:9px 14px;font:inherit;font-weight:600;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.pf-tabs button.on{color:var(--teal-deep);box-shadow:inset 0 -2px var(--teal-deep)}
+.pf-tabs i{font-style:normal;font-size:.7rem;background:#F3D9D2;border-radius:8px;padding:1px 6px;margin-left:4px}
+.pf-stats{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.pf-stat{flex:1;min-width:130px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.pf-stat b{display:block;font-family:var(--serif);font-size:1.25rem;color:var(--teal-deep);font-weight:600}
+.pf-stat span{font-size:.72rem;color:var(--ink-soft)}
+.pf-pane[hidden]{display:none}
+.pf-two{display:block}
+.lh .pf-two{display:grid;grid-template-columns:1.1fr .9fr;gap:26px}
+@media (max-width:900px){.lh .pf-two{grid-template-columns:1fr}}
+.pf-more{margin-top:8px}
+
+/* ===== v50 — DISPONIBILIDADE, FINANCEIRO e CONFIGURACOES ===== */
+#panel-availability.active{display:grid;grid-template-columns:360px minmax(0,1fr);gap:0 22px;align-items:start}
+#panel-availability .avail-form{grid-column:1;grid-row:1 / span 5;margin-bottom:0}
+#panel-availability > .section-label,#panel-availability > #weekdayOwnersList,#panel-availability > #availCalendars,#panel-availability > .avail-chips{grid-column:2}
+#panel-availability > .section-label:nth-of-type(2){grid-row:4}
+#panel-availability > #weekdayOwnersList{grid-row:5}
+#panel-availability > .section-label:nth-of-type(3){grid-row:1}
+#panel-availability > .avail-chips{grid-row:2}
+#panel-availability > #availCalendars{grid-row:3}
+.avail-chips{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}
+.avail-chips button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:500;color:var(--ink);cursor:pointer}
+.avail-chips button.on{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
+@media (max-width:900px){#panel-availability.active{display:block}}
+.fin-kpis{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}
+.fin-kpi{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.fin-kpi span{display:block;font-size:.72rem;color:var(--ink-soft)}
+.fin-kpi b{display:block;font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--teal-deep)}
+.fin-kpi.g b{color:#2F6B3F}.fin-kpi.r b{color:#B03A2E}
+.fin-tabs,.cfg-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 16px;overflow-x:auto}
+.fin-tabs button,.cfg-tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:600;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.fin-tabs button.on,.cfg-tabs button.on{color:var(--teal-deep);box-shadow:inset 0 -2px var(--teal-deep)}
+.cfg-pane[hidden]{display:none}
+#panel-settings .settings-submit-row{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 18px;margin-top:16px;z-index:5}
+.clinic-card.cc-acc > .clinic-card-head{cursor:pointer}
+.clinic-card.cc-acc > .clinic-card-head::after{content:"\2304";margin-left:10px;color:var(--ink-soft)}
+.clinic-card.cc-acc.open > .clinic-card-head::after{content:"\2303"}
+.clinic-card.cc-acc:not(.open) > .cc-body{display:none}
+
+/* ===== v50 — PACIENTE: login com painel de marca e agendamento com calendario do mes ===== */
+.auth-hero,#bkCal{display:none}
+#publicBookingScreen .bk-hero{background:var(--teal-deep)}
+@media (min-width:901px){
+  #publicAuthScreen.auth-wrap{max-width:1000px}
+  #publicAuthScreen .auth-split{display:grid;grid-template-columns:minmax(300px,430px) minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  #publicAuthScreen .auth-hero{display:flex;flex-direction:column;justify-content:space-between;gap:28px;background:var(--teal-deep);color:#fff;padding:40px 34px}
+  #publicAuthScreen .auth-hero .hb{font:600 1.1rem var(--serif);opacity:.95}
+  #publicAuthScreen .auth-hero h2{font:600 1.9rem/1.18 var(--serif);color:#fff;margin:0 0 22px}
+  #publicAuthScreen .auth-hero .ben{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+  #publicAuthScreen .auth-hero .ben i{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.22);font-style:normal;font-weight:600;text-align:center;line-height:28px}
+  #publicAuthScreen .auth-hero .ben b{display:block}
+  #publicAuthScreen .auth-hero .ben span{font-size:.85rem;opacity:.9}
+  #publicAuthScreen .auth-main{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+  #publicAuthScreen .auth-card{border:0;box-shadow:none;padding:0}
+  #publicBookingScreen{max-width:1100px}
+  #publicBookingScreen .bk-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  #publicBookingScreen .bk-body{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0 32px;align-items:start}
+  #publicBookingScreen .bk-body > .bk-section-head,#publicBookingScreen .bk-body > .bk-strip{display:none}
+  #bkCal{display:block;grid-column:1;grid-row:1;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+  #publicBookingScreen .future-date-inline{grid-column:1;grid-row:2}
+  #publicBookingScreen #futureDateHint{grid-column:1;grid-row:3}
+  #publicBookingScreen #slotListLabel{grid-column:2;grid-row:1;margin-top:0!important}
+  #publicBookingScreen #slotList{grid-column:2;grid-row:2 / span 2;display:block}
+  #publicBookingScreen #myApptsWrap{grid-column:1 / -1;grid-row:4}
+  #bkCal .mc-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;font-weight:600}
+  #bkCal .mc-h button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--teal-deep);cursor:pointer;padding:0}
+  #bkCal .mc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:.85rem}
+  #bkCal .mc-g span{color:var(--ink-soft);font-size:.7rem;padding:2px 0}
+  #bkCal .mc-g button{border:0;background:none;padding:8px 0;border-radius:8px;font:inherit;color:#C9AEA5;cursor:default}
+  #bkCal .mc-g button.a{background:#F3D9D2;color:var(--ink);cursor:pointer}
+  #bkCal .mc-g button.t{background:var(--teal-deep);color:#fff;font-weight:700}
+}
+
+/* ===== v50 - DIAGNOSTICO DE CONEXAO (Configuracoes, so administrador) ===== */
+#cfgDiag .dg-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:.86rem}
+#cfgDiag .dg-b{flex:none;min-width:84px;text-align:center;border-radius:6px;padding:2px 8px;font-size:.7rem;font-weight:700;letter-spacing:.04em}
+#cfgDiag .dg-ok{background:#E7F0E4;color:#2F6B3F}#cfgDiag .dg-fail{background:#FBDEDB;color:#B03A2E}
+#cfgDiag .dg-warn{background:#FBEAD1;color:#8A5A12}#cfgDiag .dg-skip{background:#F0E4DF;color:#78605A}
+#cfgDiag .dg-g{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sienna);margin:16px 0 2px;font-weight:700}
+#cfgDiag .dg-n{font-weight:600}#cfgDiag .dg-m{color:var(--ink-soft)}
+#cfgDiag textarea{width:100%;min-height:120px;margin-top:10px;font:.78rem monospace}
+
+/* ===== v50 - ACABAMENTO: especialidade/profissional no mesmo formato do login e faixa de marca no celular ===== */
+.auth-hero{display:none}
+@media (min-width:901px){
+  #publicClinicScreen.auth-wrap{max-width:1000px}
+  #publicClinicScreen .auth-split{display:grid;grid-template-columns:minmax(300px,430px) minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  #publicClinicScreen .auth-hero{display:flex;flex-direction:column;justify-content:space-between;gap:28px;background:var(--teal-deep);color:#fff;padding:40px 34px}
+  #publicClinicScreen .auth-hero .hb{font:600 1.1rem var(--serif);opacity:.95}
+  #publicClinicScreen .auth-hero h2{font:600 1.9rem/1.18 var(--serif);color:#fff;margin:0 0 22px}
+  #publicClinicScreen .auth-hero .ben{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+  #publicClinicScreen .auth-hero .ben i{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.22);font-style:normal;font-weight:600;text-align:center;line-height:28px}
+  #publicClinicScreen .auth-hero .ben b{display:block}
+  #publicClinicScreen .auth-hero .ben span{font-size:.85rem;opacity:.9}
+  #publicClinicScreen .auth-main{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+  #publicClinicScreen .auth-card{border:0;box-shadow:none;padding:0}
+  #publicProfessionalScreen.auth-wrap{max-width:1000px}
+  #publicProfessionalScreen .auth-split{display:grid;grid-template-columns:minmax(300px,430px) minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+  #publicProfessionalScreen .auth-hero{display:flex;flex-direction:column;justify-content:space-between;gap:28px;background:var(--teal-deep);color:#fff;padding:40px 34px}
+  #publicProfessionalScreen .auth-hero .hb{font:600 1.1rem var(--serif);opacity:.95}
+  #publicProfessionalScreen .auth-hero h2{font:600 1.9rem/1.18 var(--serif);color:#fff;margin:0 0 22px}
+  #publicProfessionalScreen .auth-hero .ben{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+  #publicProfessionalScreen .auth-hero .ben i{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.22);font-style:normal;font-weight:600;text-align:center;line-height:28px}
+  #publicProfessionalScreen .auth-hero .ben b{display:block}
+  #publicProfessionalScreen .auth-hero .ben span{font-size:.85rem;opacity:.9}
+  #publicProfessionalScreen .auth-main{padding:36px 40px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+  #publicProfessionalScreen .auth-card{border:0;box-shadow:none;padding:0}
+}
+@media (max-width:900px){
+  #publicAuthScreen .auth-hero,#publicClinicScreen .auth-hero,#publicProfessionalScreen .auth-hero{display:block;background:var(--teal-deep);color:#fff;border-radius:14px;padding:18px 18px 44px;margin-bottom:-30px}
+  #publicAuthScreen .auth-hero .hb,#publicClinicScreen .auth-hero .hb,#publicProfessionalScreen .auth-hero .hb{font:600 1rem var(--serif);opacity:.95;margin-bottom:6px}
+  #publicAuthScreen .auth-hero h2,#publicClinicScreen .auth-hero h2,#publicProfessionalScreen .auth-hero h2{font:600 1.25rem/1.2 var(--serif);color:#fff;margin:0}
+  #publicAuthScreen .auth-hero .ben,#publicClinicScreen .auth-hero .ben,#publicProfessionalScreen .auth-hero .ben{display:none}
+  #publicAuthScreen .auth-main,#publicClinicScreen .auth-main,#publicProfessionalScreen .auth-main{position:relative}
+}
+.clinic-pick-btn{border-radius:12px}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -1437,8 +1634,10 @@ body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-colo
     <div class="brand">
       <h1>Adrielle Dias</h1>
       <div class="specialty" id="specialtyLabel">Fisioterapia</div>
+      <button type="button" class="sb-toggle" id="sbCollapseBtn" aria-label="Ocultar menu" title="Ocultar menu">«</button>
     </div>
     <div class="head-right">
+      <button type="button" class="sb-show" id="sbShowBtn" aria-label="Mostrar menu" title="Mostrar menu">☰</button>
       <div class="alerts-wrap" id="alertsWrap" style="display:none;">
         <button type="button" class="alerts-bell" id="alertsBellBtn" title="Alertas" aria-label="Alertas">
           <span class="alerts-bell-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><span class="alerts-badge" id="alertsBadge" style="display:none;"></span>
@@ -2579,6 +2778,31 @@ body.staff-header .mode-badge:hover{background:rgba(255,255,255,.12);border-colo
   </div>
 </div>
 
+<script>
+/* v50 — moldura: agrupa o conteúdo e controla a barra lateral (ocultar/mostrar) */
+(function(){
+  var app=document.querySelector('.app'),m=document.createElement('div'),s=document.getElementById('adminClinicTabs');
+  m.className='shell-main';
+  var x=document.createElement('div');x.className='sb-extra';x.id='sbExtra';
+  x.innerHTML='<div id="sbMiniWrap"><div class="sb-h">Calend\u00e1rio</div><div id="sbMini"></div></div><div class="sb-h" id="sbProfLbl">Profissionais</div>';
+  x.appendChild(s);
+  s=document.getElementById('panel-agenda');
+  while(s){var n=s.nextElementSibling;m.appendChild(s);s=n;}
+  app.appendChild(x);app.appendChild(m);
+  var K='sidebarHidden_v1';
+  function mobile(){return window.matchMedia&&window.matchMedia('(max-width:900px)').matches;}
+  function saved(){try{return localStorage.getItem(K)==='1';}catch(e){return false;}}
+  function save(h){try{localStorage.setItem(K,h?'1':'0');}catch(e){}}
+  document.body.classList.toggle('sb-hidden',saved());
+  document.addEventListener('click',function(e){
+    var t=e.target;if(!t||!t.closest)return;
+    var b=t.closest('#sbCollapseBtn,#sbShowBtn,#navTabs button');
+    if(b&&b.id==='sbCollapseBtn'){ if(mobile())document.body.classList.remove('sb-open'); else{save(true);document.body.classList.add('sb-hidden');} }
+    else if(b&&b.id==='sbShowBtn'){ if(mobile())document.body.classList.add('sb-open'); else{save(false);document.body.classList.remove('sb-hidden');} }
+    else if(b||t===document.body){ document.body.classList.remove('sb-open'); }
+  });
+})();
+</script>
 <script>
 /* v37: caixa de mensagem no celular — um toque em OK fecha; mensagens repetidas são unificadas */
 (function(){
@@ -5108,10 +5332,10 @@ function renderPatientDetail(){
         <div>
           <h2>${escapeHtml(p.name)}</h2>
           <div class="detail-meta">
-            <div><strong>${p.phone || '—'}</strong>telefone</div>
-            <div><strong>${p.birth || '—'}</strong>nascimento</div>
-            <div><strong>${p.cpf || '—'}</strong>cpf</div>
-            <div><strong>${p.address || '—'}</strong>endereço</div>
+            <div><strong>${escapeHtml(p.phone || '—')}</strong>telefone</div>
+            <div><strong>${escapeHtml(p.birth || '—')}</strong>nascimento</div>
+            <div><strong>${escapeHtml(p.cpf || '—')}</strong>cpf</div>
+            <div><strong>${escapeHtml(p.address || '—')}</strong>endereço</div>
             <div><strong>${next ? isoToDisplay(next.date)+' · '+next.hour : 'nenhuma'}</strong>próxima sessão</div>
           </div>
         </div>
@@ -6872,8 +7096,9 @@ function renderBookingScreen(){
   if(!bkViewStart || (firstValid && bkViewStart < firstValid)) bkViewStart = firstValid ? new Date(firstValid) : null;
   const next15 = bkViewStart ? getNextValidDays(perPage, bkViewStart, selectedPublicClinicId) : [];
   if(next15.length && fmtDate(next15[0]) !== fmtDate(bkViewStart)) bkViewStart = new Date(next15[0]);
+  const semDiasLiberados = !next15.length && !selectedPublicDate;
   if(!selectedPublicDate){
-    selectedPublicDate = next15[0];
+    selectedPublicDate = next15[0] || new Date();
   }
   const selIso = fmtDate(selectedPublicDate);
   const isCustomFutureDate = !next15.find(d=>fmtDate(d)===selIso);
@@ -6902,7 +7127,9 @@ function renderBookingScreen(){
   renderSlotList(selectedPublicDate);
 
   const slotListLabel = document.getElementById('slotListLabel');
-  slotListLabel.textContent = longDayLabel(selectedPublicDate);
+  slotListLabel.textContent = semDiasLiberados
+    ? 'Esta profissional ainda não liberou datas para agendamento. Volte mais tarde ou escolha outro profissional.'
+    : longDayLabel(selectedPublicDate);
   document.getElementById('bkMonth').textContent = monthLabel(bkViewStart || selectedPublicDate);
   // Setas: só aparecem quando há para onde ir (nunca para datas que já passaram).
   const hasEarlier = !!(bkViewStart && firstValid && fmtDate(bkViewStart) > fmtDate(firstValid));
@@ -10298,6 +10525,339 @@ async function initFinanceiro(){
 }
 initFinanceiro();
 
+})();
+</script>
+<script>
+/* v50 — calend\u00e1rio do m\u00eas na barra lateral da agenda (usa currentWeekStart / agendaAllDate / renderAgenda) */
+(function(){
+  var mini=document.getElementById('sbMini'),tabs=document.getElementById('adminClinicTabs'),lbl=document.getElementById('sbProfLbl'),wrap=document.getElementById('sbMiniWrap');
+  var MES=['janeiro','fevereiro','mar\u00e7o','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var month=null,lastKey='';
+  function selDate(){return agendaShowAll?new Date(agendaAllDate+'T00:00:00'):new Date(currentWeekStart);}
+  function render(){
+    var sel=selDate(),key=agendaShowAll+'|'+fmtDate(sel);
+    if(!month||key!==lastKey){month=new Date(sel.getFullYear(),sel.getMonth(),1);lastKey=key;}
+    var y=month.getFullYear(),m=month.getMonth(),pad=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),today=fmtDate(new Date());
+    var from=agendaShowAll?fmtDate(sel):fmtDate(sel),to=agendaShowAll?from:fmtDate(new Date(sel.getFullYear(),sel.getMonth(),sel.getDate()+6));
+    var h='<div class="mc-h"><button type="button" data-m="-1" aria-label="M\u00eas anterior">\u2039</button><b>'+MES[m]+' de '+y+'</b><button type="button" data-m="1" aria-label="Pr\u00f3ximo m\u00eas">\u203a</button></div><div class="mc-g">';
+    'DSTQQSS'.split('').forEach(function(c){h+='<span>'+c+'</span>';});
+    for(var i=0;i<pad;i++)h+='<span></span>';
+    for(var d=1;d<=n;d++){var iso=fmtDate(new Date(y,m,d));
+      h+='<button type="button" data-d="'+iso+'" class="'+(iso===today?'td ':'')+(iso>=from&&iso<=to?'wk':'')+'">'+d+'</button>';}
+    mini.innerHTML=h+'</div>';
+  }
+  function vis(){
+    var on=document.body.classList.contains('staff-header')&&document.getElementById('panel-agenda').classList.contains('active');
+    wrap.style.display=on?'':'none';
+    lbl.style.display=(tabs.style.display==='none')?'none':'';
+  }
+  mini.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button');if(!b)return;
+    if(b.dataset.m){month=new Date(month.getFullYear(),month.getMonth()+Number(b.dataset.m),1);render();return;}
+    if(b.dataset.d){var d=new Date(b.dataset.d+'T00:00:00');
+      if(agendaShowAll){agendaAllDate=b.dataset.d;}else{currentWeekStart=mondayOf(d);}
+      renderAgenda();}
+  });
+  var orig=window.renderAgenda;
+  window.renderAgenda=function(){var r=orig.apply(this,arguments);try{render();vis();}catch(e){console.error(e);}return r;};
+  var mo=new MutationObserver(vis);
+  mo.observe(document.querySelector('.shell-main'),{attributes:true,attributeFilter:['class'],subtree:true});
+  mo.observe(tabs,{attributes:true,attributeFilter:['style']});
+  mo.observe(document.body,{attributes:true,attributeFilter:['class']});
+  render();vis();
+})();
+</script>
+<script>
+/* v50 — Pacientes: ficha em abas e lista ocultavel (reaproveita renderPatientDetail e os anexos existentes) */
+(function(){
+  var layout=document.querySelector('.patients-layout'),listCol=layout.firstElementChild,detail=document.getElementById('patientDetail');
+  listCol.classList.add('pt-list');
+  var K='patientsListHidden_v1',curTab='res',lastPid=null;
+  function saved(){try{return localStorage.getItem(K)==='1';}catch(e){return false;}}
+  function setHid(h){layout.classList.toggle('lh',h);try{localStorage.setItem(K,h?'1':'0');}catch(e){}}
+  layout.classList.toggle('lh',saved());
+  var head=listCol.querySelector('.patients-list-head'),hb=document.createElement('button');
+  hb.type='button';hb.className='btn small secondary pt-hide';hb.id='patientsHideBtn';hb.textContent='\u00ab Ocultar lista';
+  head.parentNode.insertBefore(hb,head);
+  hb.addEventListener('click',function(){setHid(true);renderPatientDetail();});
+  var sec=document.getElementById('pAttachmentsSection'),home=sec.parentNode,homeNext=sec.nextSibling;
+  function restore(){if(sec.parentNode!==home){home.insertBefore(sec,homeNext&&homeNext.parentNode===home?homeNext:null);}}
+  function attach(p,pane){
+    editingPatientId=p.id;pane.appendChild(sec);sec.style.display='block';
+    document.getElementById('pAttachmentsEmptyNew').style.display='none';
+    document.getElementById('pAttachmentAddBtn').style.display='inline-block';
+    document.getElementById('pAttachmentStatus').textContent='';
+    loadAndRenderAttachments(p.id);
+  }
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  function stat(v,l){var s=el('div','pf-stat'),b=el('b',null,v);s.appendChild(b);s.appendChild(el('span',null,l));return s;}
+  function tabify(){
+    var card=detail.querySelector('.detail-card');if(!card)return;
+    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;});if(!p)return;
+    if(p.id!==lastPid){curTab='res';lastPid=p.id;}
+    var rec=currentRole==='receptionist',kids=[].slice.call(card.children);
+    var top=card.querySelector('.detail-top'),meta=card.querySelector('.detail-meta'),editBtn=card.querySelector('#editPatientBtn');
+    var boxes=kids.filter(function(e){return e.classList.contains('diagnosis-box');});
+    var rows=[].slice.call(card.querySelectorAll('.session-row')),hist=card.querySelector('.history-title');
+    var notes=kids.filter(function(e){return e.classList.contains('empty-note');});
+    var cnt=kids.filter(function(e){return !e.className&&e.querySelector&&e.querySelector('.lbl');})[0];
+    var completed=cnt?((cnt.textContent.match(/(\d+)\s*$/)||[0,'0'])[1]):'0';
+    var nextTxt=meta.lastElementChild.querySelector('strong').textContent;
+    var clinic=DATA.clinics.find(function(c){return c.id===p.clinicId;});
+    var wrap=el('div','pf'),bar=el('div','pf-bar'),show=el('button','btn small secondary','\u2630 Mostrar lista'),sel=el('select','pf-sel');
+    show.type='button';show.id='patientsShowBtn';sel.id='pfSwitch';sel.setAttribute('aria-label','Trocar paciente');
+    DATA.patients.filter(function(x){return x.clinicId===adminClinicId;}).sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(x){
+      var o=el('option',null,x.name);o.value=x.id;if(x.id===p.id)o.selected=true;sel.appendChild(o);});
+    show.addEventListener('click',function(){setHid(false);renderPatientDetail();});
+    sel.addEventListener('change',function(){selectedPatientId=sel.value;renderPatientList();renderPatientDetail();});
+    bar.appendChild(show);bar.appendChild(sel);wrap.appendChild(bar);
+    var hd=el('div','pf-head'),id=el('div','pf-id'),h2=el('h2',null,p.name);
+    hd.appendChild(el('span','pf-av',p.name.split(/\s+/).slice(0,2).map(function(w){return w.charAt(0);}).join('').toUpperCase()));
+    id.appendChild(h2);id.appendChild(el('span','pf-sub',clinic?clinic.name:''));hd.appendChild(id);hd.appendChild(editBtn);wrap.appendChild(hd);
+    var panes={};
+    function pane(k){var d=el('div','pf-pane');d.dataset.p=k;panes[k]=d;wrap.appendChild(d);return d;}
+    if(rec){
+      var d=pane('dad');d.appendChild(meta);boxes.forEach(function(b){d.appendChild(b);});
+    }else{
+      var tb=el('div','pf-tabs');tb.setAttribute('role','tablist');
+      [['res','Resumo'],['his','Hist\u00f3rico'],['ane','Anexos'],['dad','Dados']].forEach(function(t){
+        var b=el('button',null,t[1]);b.type='button';b.dataset.t=t[0];
+        if(t[0]==='his'){b.appendChild(el('i',null,String(rows.length)));}
+        tb.appendChild(b);});
+      wrap.insertBefore(tb,null);
+      var r=pane('res'),st=el('div','pf-stats');
+      st.appendChild(stat(completed,'Sess\u00f5es conclu\u00eddas'));st.appendChild(stat(nextTxt,'Pr\u00f3xima sess\u00e3o'));st.appendChild(stat(String(rows.length),'Registros'));
+      r.appendChild(st);
+      var two=el('div','pf-two'),l=el('div'),rt=el('div');
+      boxes.forEach(function(b){l.appendChild(b);});
+      rt.appendChild(el('div','history-title','\u00daltimos atendimentos'));
+      rows.slice(0,3).forEach(function(x){rt.appendChild(x.cloneNode(true));});
+      if(!rows.length)rt.appendChild(el('p','empty-note','Nenhum atendimento registrado ainda.'));
+      else if(rows.length>3){var more=el('button','btn small secondary pf-more','Ver hist\u00f3rico completo');more.type='button';more.addEventListener('click',function(){go('his');});rt.appendChild(more);}
+      two.appendChild(l);two.appendChild(rt);r.appendChild(two);
+      var h=pane('his');if(hist)h.appendChild(hist);rows.forEach(function(x){h.appendChild(x);});notes.forEach(function(x){h.appendChild(x);});
+      pane('ane');
+      pane('dad').appendChild(meta);
+      tb.addEventListener('click',function(e){var b=e.target.closest('button');if(b)go(b.dataset.t);});
+    }
+    card.innerHTML='';card.appendChild(wrap);
+    function go(k){
+      curTab=k;
+      [].forEach.call(wrap.querySelectorAll('.pf-tabs button'),function(b){b.classList.toggle('on',b.dataset.t===k);});
+      for(var n in panes){panes[n].hidden=(n!==k);}
+      if(k==='ane'){attach(p,panes.ane);}else{restore();}
+    }
+    go(rec?'dad':curTab);
+  }
+  var oD=window.renderPatientDetail;
+  window.renderPatientDetail=function(){restore();var r=oD.apply(this,arguments);try{tabify();}catch(e){console.error(e);}return r;};
+  var oM=window.openPatientModal;
+  window.openPatientModal=function(){restore();return oM.apply(this,arguments);};
+})();
+</script>
+<script>
+/* v50 - Disponibilidade (filtro por profissional), Financeiro (resumo + abas) e Configuracoes (abas + acordeao) */
+(function(){
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  /* ---- Disponibilidade: botoes para filtrar os calendarios por profissional ---- */
+  var cal=document.getElementById('availCalendars'),chips=el('div','avail-chips'),cur='all';
+  cal.parentNode.insertBefore(chips,cal);
+  function paintChips(){
+    var blocks=[].slice.call(cal.querySelectorAll('.avail-clinic-block'));
+    var names=blocks.map(function(b){return b.querySelector('.avail-clinic-title').textContent.trim();});
+    if(cur!=='all'&&names.indexOf(cur)<0)cur='all';
+    chips.innerHTML='';
+    [['all','Todos']].concat(names.map(function(n){return [n,n];})).forEach(function(p){
+      var b=el('button',cur===p[0]?'on':'',p[1]);b.type='button';b.dataset.n=p[0];chips.appendChild(b);});
+    blocks.forEach(function(b,i){b.style.display=(cur==='all'||names[i]===cur)?'':'none';});
+  }
+  chips.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;cur=b.dataset.n;paintChips();});
+  var busy=false;
+  new MutationObserver(function(){if(busy)return;busy=true;paintChips();setTimeout(function(){busy=false;},0);}).observe(cal,{childList:true});
+  paintChips();
+  /* ---- Financeiro: resumo no topo + abas ---- */
+  var wrap=document.querySelector('#panel-financeiro .wrap'),secs=[].slice.call(wrap.querySelectorAll(':scope > .section'));
+  var map={rec:secs[1],got:secs[2],exp:secs[3],fix:secs[4],bkp:secs[0]};
+  var kp=el('div','fin-kpis'),tb=el('div','fin-tabs');
+  tb.setAttribute('role','tablist');
+  [['rec','A receber'],['got','Recebido'],['exp','Despesas'],['fix','Despesas fixas'],['bkp','Backup']].forEach(function(t){var b=el('button',null,t[1]);b.type='button';b.dataset.t=t[0];tb.appendChild(b);});
+  wrap.insertBefore(kp,secs[0]);wrap.insertBefore(tb,secs[0]);
+  function showTab(k){
+    for(var n in map)map[n].style.display=(n===k)?'':'none';
+    [].forEach.call(tb.children,function(b){b.classList.toggle('on',b.dataset.t===k);});
+  }
+  tb.addEventListener('click',function(e){var b=e.target.closest('button');if(b)showTab(b.dataset.t);});
+  function val(id){var c=document.querySelector('#'+id+' .card.total .cvalue');if(!c)return 0;var m=c.textContent.replace(/\u00a0/g,' ').match(/-?[\d.]+,\d{2}/);return m?parseFloat(m[0].replace(/\./g,'').replace(',','.')):0;}
+  function brl(v){return (v<0?'\u2212':'')+'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function kpis(){
+    var ar=val('receivableCards'),rc=val('receivedCards'),ex=val('expenseCards'),sd=rc-ex;
+    kp.innerHTML='';
+    [['A receber',ar,''],['Recebido',rc,'g'],['Despesas',ex,'r'],['Saldo (recebido \u2212 despesas)',sd,sd<0?'r':'g']].forEach(function(k){
+      var d=el('div','fin-kpi '+k[2]);d.appendChild(el('span',null,k[0]));d.appendChild(el('b',null,brl(k[1])));kp.appendChild(d);});
+  }
+  var kb=false;function kq(){if(kb)return;kb=true;setTimeout(function(){kb=false;kpis();},0);}
+  ['receivableCards','receivedCards','expenseCards'].forEach(function(id){new MutationObserver(kq).observe(document.getElementById(id),{childList:true,subtree:true,characterData:true});});
+  kpis();showTab('rec');
+  var oG=window.goToPanelFromAlert;
+  window.goToPanelFromAlert=function(p,t){var r=oG.apply(this,arguments);if(t==='backupSection')showTab('bkp');return r;};
+  /* ---- Configuracoes: abas + profissionais em acordeao ---- */
+  var form=document.getElementById('settingsForm'),panel=document.getElementById('panel-settings');
+  var kids=[].slice.call(form.children),panes={geral:el('div','cfg-pane'),ace:el('div','cfg-pane'),pro:el('div','cfg-pane')},st='geral';
+  var iPin=kids.findIndex(function(e){return e.classList.contains('field-narrow');});
+  var iPro=kids.findIndex(function(e){return e.classList.contains('section-label');});
+  var iAdd=kids.findIndex(function(e){return e.id==='addClinicBtn';});
+  kids.forEach(function(e,i){var p=i<iPin?'geral':i<iPro?'ace':i<=iAdd?'pro':null;if(p)panes[p].appendChild(e);});
+  var sub=form.querySelector('.settings-submit-row');
+  form.insertBefore(panes.geral,sub);form.insertBefore(panes.ace,sub);form.insertBefore(panes.pro,sub);
+  var exc=[].slice.call(panel.querySelectorAll(':scope > .settings-form')).filter(function(x){return x!==form;})[0],ct=el('div','cfg-tabs');
+  [['geral','Geral'],['ace','Acessos'],['pro','Profissionais'],['exc','Pacientes exclu\u00eddos']].forEach(function(t){var b=el('button',null,t[1]);b.type='button';b.dataset.t=t[0];ct.appendChild(b);});
+  panel.insertBefore(ct,form);
+  function cfg(k){st=k;
+    for(var n in panes)panes[n].hidden=(n!==k);
+    form.style.display=(k==='exc')?'none':'';if(exc)exc.style.display=(k==='exc')?'':'none';
+    [].forEach.call(ct.children,function(b){b.classList.toggle('on',b.dataset.t===k);});}
+  ct.addEventListener('click',function(e){var b=e.target.closest('button');if(b)cfg(b.dataset.t);});
+  cfg('geral');
+  var open={0:true};
+  function acc(){
+    [].forEach.call(document.querySelectorAll('#clinicsConfig > .clinic-card'),function(c,i){
+      if(c.classList.contains('cc-acc'))return;
+      var head=c.querySelector('.clinic-card-head'),body=el('div','cc-body');
+      while(head.nextSibling)body.appendChild(head.nextSibling);
+      c.appendChild(body);c.classList.add('cc-acc');if(open[i])c.classList.add('open');
+      head.addEventListener('click',function(e){if(e.target.closest('button'))return;c.classList.toggle('open');open[i]=c.classList.contains('open');});
+    });
+  }
+  var oC=window.renderClinicsConfig;
+  window.renderClinicsConfig=function(){var r=oC.apply(this,arguments);try{acc();}catch(e){console.error(e);}return r;};
+  acc();
+})();
+</script>
+<script>
+/* v50 - Paciente: painel de marca no login e calendario do mes no agendamento (sem alterar a logica) */
+(function(){
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  var sc=document.getElementById('publicAuthScreen'),tabs=sc.querySelector('.auth-tabs'),card=sc.querySelector('.auth-card');
+  var split=el('div','auth-split'),hero=el('div','auth-hero'),main=el('div','auth-main'),top=el('div'),hb=el('div','hb','');
+  hb.id='authHeroBrand';top.appendChild(hb);
+  var h=el('h2',null,'Agende sua consulta online, sem complica\u00e7\u00e3o');top.appendChild(h);
+  [['Agende online','Escolha especialidade, profissional e hor\u00e1rio.'],['Pague o sinal por Pix','Confirma\u00e7\u00e3o do agendamento ap\u00f3s o pagamento.'],['Acompanhe tudo','Veja e gerencie seus agendamentos.']].forEach(function(b,i){
+    var r=el('div','ben'),t=el('div');r.appendChild(el('i',null,String(i+1)));t.appendChild(el('b',null,b[0]));t.appendChild(el('span',null,b[1]));r.appendChild(t);top.appendChild(r);});
+  hero.appendChild(top);main.appendChild(tabs);main.appendChild(card);split.appendChild(hero);split.appendChild(main);sc.appendChild(split);
+  var oP=window.renderPublicArea;
+  window.renderPublicArea=function(){var r=oP.apply(this,arguments);try{hb.textContent=(DATA.settings&&DATA.settings.clinicName)||'';}catch(e){}return r;};
+  /* calendario do mes (so aparece no desktop; no celular continua a faixa de dias) */
+  var body=document.querySelector('#publicBookingScreen .bk-body'),cal=el('div');cal.id='bkCal';
+  body.insertBefore(cal,body.querySelector('.future-date-inline'));
+  var MES=['janeiro','fevereiro','mar\u00e7o','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],cm=null,last='';
+  function render(){
+    if(!selectedPublicDate||!selectedPublicClinicId){cal.innerHTML='';return;}
+    var sel=new Date(selectedPublicDate),key=fmtDate(sel);
+    if(!cm||key!==last){cm=new Date(sel.getFullYear(),sel.getMonth(),1);last=key;}
+    var f=getNextValidDays(1,new Date(),selectedPublicClinicId)[0],fIso=f?fmtDate(f):'9999-99-99';
+    var y=cm.getFullYear(),m=cm.getMonth(),pad=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();
+    var s='<div class="mc-h"><button type="button" data-m="-1" aria-label="M\u00eas anterior">\u2039</button><span>'+MES[m]+' de '+y+'</span><button type="button" data-m="1" aria-label="Pr\u00f3ximo m\u00eas">\u203a</button></div><div class="mc-g">';
+    'DSTQQSS'.split('').forEach(function(c){s+='<span>'+c+'</span>';});
+    for(var i=0;i<pad;i++)s+='<span></span>';
+    for(var d=1;d<=n;d++){var dt=new Date(y,m,d),iso=fmtDate(dt),ok=iso>=fIso&&isValidAttendanceDay(dt,selectedPublicClinicId);
+      s+='<button type="button" data-d="'+iso+'" class="'+(iso===key?'t':ok?'a':'')+'"'+(ok||iso===key?'':' disabled')+'>'+d+'</button>';}
+    cal.innerHTML=s+'</div>';
+  }
+  cal.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('button');if(!b||b.disabled)return;
+    if(b.dataset.m){cm=new Date(cm.getFullYear(),cm.getMonth()+Number(b.dataset.m),1);render();return;}
+    if(b.dataset.d){var dt=parseIso(b.dataset.d);selectedPublicDate=dt;bkViewStart=new Date(dt);document.getElementById('futureDateInput').value='';renderBookingScreen();}
+  });
+  var oB=window.renderBookingScreen;
+  window.renderBookingScreen=function(){var r=oB.apply(this,arguments);try{render();}catch(e){console.error(e);}return r;};
+})();
+</script>
+<script>
+/* v50 - Diagnostico de conexao: testa, no navegador de quem usa, o banco, o Worker, as funcoes de pagamento/e-mail e as bibliotecas.
+   So le (select/GET/OPTIONS): nao grava nada, nao envia e-mail e nao cria cobranca. */
+(function(){
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  var ct=document.querySelector('.cfg-tabs'),form=document.getElementById('settingsForm'),panel=document.getElementById('panel-settings');
+  var exc=[].slice.call(panel.querySelectorAll(':scope > .settings-form')).filter(function(x){return x!==form;})[0];
+  var box=el('div','settings-form');box.id='cfgDiag';box.style.display='none';
+  var lbl=el('div','section-label','Diagn\u00f3stico de conex\u00e3o');lbl.style.display='block';box.appendChild(lbl);
+  box.appendChild(el('div','hint','Testa, neste navegador, se o banco de dados, o servidor de anexos, os pagamentos e os e-mails respondem. S\u00f3 faz leituras: n\u00e3o grava dados, n\u00e3o envia e-mail e n\u00e3o cria cobran\u00e7a. Rode no site publicado (no modo teste local o banco n\u00e3o \u00e9 usado).'));
+  var bar=el('div'),run=el('button','btn','Rodar diagn\u00f3stico'),cp=el('button','btn secondary','Copiar relat\u00f3rio'),res=el('div'),rep=el('textarea');
+  run.type='button';run.id='diagRunBtn';cp.type='button';cp.id='diagCopyBtn';cp.style.marginLeft='8px';res.id='diagResults';rep.id='diagReport';rep.readOnly=true;rep.style.display='none';
+  bar.style.margin='12px 0';bar.appendChild(run);bar.appendChild(cp);box.appendChild(bar);box.appendChild(res);box.appendChild(rep);
+  (exc||form).parentNode.insertBefore(box,(exc||form).nextSibling);
+  var tab=el('button',null,'Diagn\u00f3stico');tab.type='button';tab.dataset.t='diag';ct.appendChild(tab);
+  ct.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var on=b.dataset.t==='diag';box.style.display=on?'':'none';if(on){form.style.display='none';if(exc)exc.style.display='none';}});
+  var rows=[],LBL={ok:'OK',fail:'FALHA',warn:'ATEN\u00c7\u00c3O',skip:'N\u00c3O TESTADO'};
+  function paint(){
+    res.innerHTML='';var g='';
+    rows.forEach(function(r){
+      if(r.g!==g){g=r.g;res.appendChild(el('div','dg-g',g));}
+      var d=el('div','dg-row'),b=el('span','dg-b dg-'+r.s,LBL[r.s]),t=el('div');
+      t.appendChild(el('div','dg-n',r.n));t.appendChild(el('div','dg-m',r.m||''));d.appendChild(b);d.appendChild(t);res.appendChild(d);});
+  }
+  function add(g,n,s,m){rows.push({g:g,n:n,s:s,m:m});paint();}
+  function tmo(p,ms){return Promise.race([p,new Promise(function(_,rej){setTimeout(function(){rej(new Error('tempo esgotado ('+(ms/1000)+'s)'));},ms);})]);}
+  var TABLES=['agenda_settings','agenda_clinics','agenda_availability','agenda_appointments','agenda_busy_slots','patients','patient_attachments','deleted_patients','financeiro_clinics','financeiro_receivables','financeiro_expenses','financeiro_recurring_expenses','agenda_settings_public','agenda_clinics_public','financeiro_clinics_public'];
+  async function http(url,method){
+    try{var r=await tmo(fetch(url,{method:method}),8000);return {status:r.status};}catch(e){return {err:e.message||String(e)};}
+  }
+  async function go(){
+    rows=[];paint();run.disabled=true;rep.style.display='none';
+    var G1='Ambiente',G2='Banco de dados (Supabase)',G3='Servi\u00e7os';
+    add(G1,'Modo de execu\u00e7\u00e3o',(typeof LOCAL_TEST_MODE!=='undefined'&&LOCAL_TEST_MODE)?'warn':'ok',(typeof LOCAL_TEST_MODE!=='undefined'&&LOCAL_TEST_MODE)?'Modo teste local: sem banco online. Abra o site publicado para testar de verdade.':'Online');
+    add(G1,'P\u00e1gina segura (HTTPS)',(window.isSecureContext&&location.protocol==='https:')?'ok':'warn',(window.isSecureContext&&location.protocol==='https:')?'Conex\u00e3o segura (necess\u00e1ria para o cart\u00e3o).':'N\u00e3o \u00e9 HTTPS: os campos seguros do cart\u00e3o n\u00e3o funcionam.');
+    try{localStorage.setItem('__diag','1');var okLs=localStorage.getItem('__diag')==='1';localStorage.removeItem('__diag');add(G1,'Armazenamento do navegador',okLs?'ok':'fail',okLs?'Funciona.':'N\u00e3o consegue gravar.');}catch(e){add(G1,'Armazenamento do navegador','fail',e.message);}
+    add(G1,'Biblioteca de Excel (exporta\u00e7\u00f5es)',window.ExcelJS?'ok':'fail',window.ExcelJS?'Carregada.':'N\u00e3o carregou: exportar para Excel n\u00e3o vai funcionar.');
+    add(G1,'Biblioteca do Supabase',window.supabase?'ok':'fail',window.supabase?'Carregada.':'N\u00e3o carregou.');
+    add(G1,'SDK do Mercado Pago (cart\u00e3o)',window.MercadoPago?'ok':'fail',window.MercadoPago?'Carregado.':'N\u00e3o carregou: pagamento com cart\u00e3o n\u00e3o vai funcionar.');
+    add(G1,'Chave p\u00fablica do Mercado Pago',(typeof MP_PUBLIC_KEY!=='undefined'&&MP_PUBLIC_KEY)?'ok':'fail',(typeof MP_PUBLIC_KEY!=='undefined'&&MP_PUBLIC_KEY)?'Preenchida.':'Vazia.');
+    if(!sbClient){add(G2,'Conex\u00e3o','skip','Sem cliente Supabase neste modo: tabelas n\u00e3o testadas.');}
+    else{
+      for(var i=0;i<TABLES.length;i++){var t=TABLES[i];
+        try{var r=await tmo(sbClient.from(t).select('*',{count:'exact',head:true}),8000);
+          if(r&&r.error)add(G2,t,'fail',(r.error.code?r.error.code+': ':'')+(r.error.message||'erro'));
+          else add(G2,t,'ok',(r&&r.count!=null)?(r.count+' registro(s) vis\u00edvel(is) para este login'):'acess\u00edvel');
+        }catch(e){add(G2,t,'fail',e.message||String(e));}}
+    }
+    if(typeof LOCAL_TEST_MODE!=='undefined'&&LOCAL_TEST_MODE&&!sbClient){add(G3,'Worker, e-mail e pagamentos','skip','N\u00e3o testados em modo local (o servidor s\u00f3 aceita o site publicado).');}
+    else{
+      var w=await http(WORKER_URL,'GET');
+      add(G3,'Servidor de anexos e login (Worker)',w.err?'fail':'ok',w.err?w.err:'Responde (HTTP '+w.status+').');
+      var fn=[['E-mail (send-notification)',EMAIL_NOTIFY_URL],['Pagamento: criar cobran\u00e7a Pix',PAYMENT_FUNCTIONS_BASE+'/mp-create-charge'],['Pagamento: cart\u00e3o',PAYMENT_FUNCTIONS_BASE+'/mp-create-card-payment'],['Pagamento: consultar status',PAYMENT_FUNCTIONS_BASE+'/check-payment-status']];
+      for(var j=0;j<fn.length;j++){var h=await http(fn[j][1],'OPTIONS');
+        if(h.err)add(G3,fn[j][0],'fail','Sem resposta: '+h.err);
+        else if(h.status===404||h.status>=500)add(G3,fn[j][0],'fail','HTTP '+h.status+(h.status===404?': fun\u00e7\u00e3o n\u00e3o publicada?':': erro no servidor.'));
+        else add(G3,fn[j][0],'ok','Publicada (HTTP '+h.status+').');}
+    }
+    var nf=rows.filter(function(r){return r.s==='fail';}).length,nw=rows.filter(function(r){return r.s==='warn';}).length;
+    add('Resumo','Resultado',nf?'fail':nw?'warn':'ok',nf?(nf+' item(ns) com falha. Use "Copiar relat\u00f3rio" e envie para an\u00e1lise.'):nw?'Sem falhas, com '+nw+' aten\u00e7\u00e3o(\u00f5es).':'Tudo respondeu como esperado.');
+    run.disabled=false;
+  }
+  function report(){
+    var L=['Diagn\u00f3stico de conex\u00e3o - '+new Date().toLocaleString('pt-BR'),'P\u00e1gina: '+location.origin,''],g='';
+    rows.forEach(function(r){if(r.g!==g){g=r.g;L.push('['+g+']');}L.push('- '+LBL[r.s]+' | '+r.n+(r.m?' | '+r.m:''));});
+    return L.join('\n');
+  }
+  run.addEventListener('click',go);
+  cp.addEventListener('click',function(){
+    if(!rows.length){rep.value='Rode o diagn\u00f3stico primeiro.';rep.style.display='block';return;}
+    var t=report();rep.value=t;rep.style.display='block';
+    try{navigator.clipboard.writeText(t).catch(function(){rep.select();});}catch(e){rep.select();}
+  });
+})();
+</script>
+<script>
+/* v50 - acabamento: mesma moldura de marca nas telas de especialidade e profissional */
+(function(){
+  var hero=document.querySelector('#publicAuthScreen .auth-hero');if(!hero)return;
+  ['publicClinicScreen','publicProfessionalScreen'].forEach(function(id){
+    var sc=document.getElementById(id),card=sc.querySelector('.auth-card');if(!card)return;
+    var split=document.createElement('div'),main=document.createElement('div'),h=hero.cloneNode(true),hb=h.querySelector('#authHeroBrand');
+    split.className='auth-split';main.className='auth-main';if(hb)hb.removeAttribute('id');
+    main.appendChild(card);split.appendChild(h);split.appendChild(main);sc.appendChild(split);});
+  var oP=window.renderPublicArea;
+  window.renderPublicArea=function(){var r=oP.apply(this,arguments);try{var n=(DATA.settings&&DATA.settings.clinicName)||'';[].forEach.call(document.querySelectorAll('.auth-hero .hb'),function(e){e.textContent=n;});}catch(e){}return r;};
 })();
 </script>
 </body>
