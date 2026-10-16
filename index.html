@@ -3123,7 +3123,7 @@ function deletePatientFromSupabase(patientId){
    mesmo jeito que pacientes e agendamentos já são, para virar fonte de
    verdade compartilhada entre todos os dispositivos/logins. */
 function deletedPatientToRow(p){
-  const { appointments, deletedAt, clinicName, ...patientFields } = p;
+  const { appointments, deletedAt, clinicName, password: _senhaNaoSalva, ...patientFields } = p;
   return {
     id: p.id,
     clinic_id: p.clinicId || null,
@@ -3463,8 +3463,10 @@ async function syncAgendaConfigToSupabase(){
         if(delErr) console.error('Falha ao excluir clínicas removidas no Supabase', delErr);
       }
     }
-    const { error: settingsErr } = await sbClient.from('agenda_settings').upsert(settingsToRow());
+    const settingsRow = settingsToRow();
+    const { error: settingsErr } = await sbClient.from('agenda_settings').upsert(settingsRow);
     if(settingsErr) console.error('Falha ao sincronizar configurações com o Supabase', settingsErr);
+    else if(adminCredsWritable) await refreshStaffPasswordHashes({ settings: settingsRow, clinics: clinicRows });
   }catch(e){ console.error('Falha ao sincronizar configurações/clínicas com o Supabase', e); }
 }
 // Mesma lógica de "semente na primeira sincronização" usada no financeiro:
@@ -3954,19 +3956,72 @@ function isPastSlot(iso, hour){
   return h <= now.getHours();
 }
 
-/* ---------- INIT ---------- */
-function init(){
-  document.getElementById('specialtyLabel').textContent = DATA.settings.specialty || 'Fisioterapia';
+/* ---------- SENHAS COM HASH ----------
+   No banco (Supabase) as senhas de admin/recepção/profissionais ficam guardadas como hash bcrypt
+   ($2a$10$...). O app nunca consegue "ler" a senha de volta: a tela mostra o campo vazio com o aviso
+   "Definida. Deixe em branco para manter" e só envia uma senha nova se a pessoa digitar uma. */
+const PWD_KEEP_HINT = 'Definida. Deixe em branco para manter';
+function isPwdHash(v){ return typeof v === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(v); }
+function pwdForInput(v){ return isPwdHash(v) ? '' : (v || ''); }
+function pwdHint(v){ return isPwdHash(v) ? PWD_KEEP_HINT : ''; }
+function fillSettingsForm(){
   document.getElementById('cfgClinicName').value = DATA.settings.clinicName || '';
   document.getElementById('cfgSpecialty').value = DATA.settings.specialty || '';
   document.getElementById('cfgAllowSaturday').checked = DATA.settings.allowSaturday !== false;
   document.getElementById('cfgAllowMultiClinic').checked = DATA.settings.allowMultiClinicSameDay === true;
   document.getElementById('cfgAccessPin').value = DATA.settings.accessPin || '13579';
   document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
-  document.getElementById('cfgProfessionalPassword').value = DATA.settings.professionalPassword || '';
+  const pp = document.getElementById('cfgProfessionalPassword');
+  pp.value = pwdForInput(DATA.settings.professionalPassword); pp.placeholder = pwdHint(DATA.settings.professionalPassword);
   document.getElementById('cfgReceptionLogin').value = DATA.settings.receptionLogin || '';
-  document.getElementById('cfgReceptionPassword').value = DATA.settings.receptionPassword || '';
+  const rp = document.getElementById('cfgReceptionPassword');
+  rp.value = pwdForInput(DATA.settings.receptionPassword); rp.placeholder = pwdHint(DATA.settings.receptionPassword);
   renderClinicsConfig();
+}
+// Depois de salvar, troca no app qualquer senha digitada (texto) pelo hash que o banco gravou, e limpa
+// a cópia local. Só mexe num campo da tela se ele ainda estiver com o texto salvo (ou vazio).
+async function refreshStaffPasswordHashes(sent){
+  if(!sbClient || !adminCredsWritable || !sent) return;
+  try{
+    const [sRes, cRes] = await Promise.all([
+      sbClient.from('agenda_settings').select('professional_password,reception_password').eq('id', 'main'),
+      sbClient.from('agenda_clinics').select('id,password,reception_password')
+    ]);
+    let mudou = false;
+    const paint = (el, antigo, novo) => {
+      if(!el) return;
+      if(el.value === '' || el.value === antigo){ el.value = ''; el.placeholder = PWD_KEEP_HINT; }
+    };
+    const s = sRes && sRes.data && sRes.data[0];
+    if(s){
+      if(isPwdHash(s.professional_password) && DATA.settings.professionalPassword !== s.professional_password
+         && DATA.settings.professionalPassword === sent.settings.professional_password){
+        const antigo = DATA.settings.professionalPassword; DATA.settings.professionalPassword = s.professional_password; mudou = true;
+        paint(document.getElementById('cfgProfessionalPassword'), antigo);
+      }
+      if(isPwdHash(s.reception_password) && DATA.settings.receptionPassword !== s.reception_password
+         && DATA.settings.receptionPassword === sent.settings.reception_password){
+        const antigo = DATA.settings.receptionPassword; DATA.settings.receptionPassword = s.reception_password; mudou = true;
+        paint(document.getElementById('cfgReceptionPassword'), antigo);
+      }
+    }
+    ((cRes && cRes.data) || []).forEach(r=>{
+      const c = DATA.clinics.find(x=>x.id === r.id); if(!c) return;
+      const enviada = (sent.clinics || []).find(x=>x.id === r.id) || {};
+      if(isPwdHash(r.password) && c.password !== r.password && c.password === enviada.password){
+        const antigo = c.password; c.password = r.password; mudou = true;
+        paint(document.querySelector('#clinicsConfig [data-clinic-field="password"][data-clinic-id="' + r.id + '"]'), antigo);
+      }
+      if(isPwdHash(r.reception_password) && c.receptionPassword !== r.reception_password && c.receptionPassword === enviada.reception_password){ c.receptionPassword = r.reception_password; mudou = true; }
+    });
+    if(mudou){ try{ await storageAPI.set(STORE_KEY, JSON.stringify(DATA), false); }catch(e){ console.error(e); } }
+  }catch(e){ console.error('Falha ao atualizar as senhas (hash) deste aparelho', e); }
+}
+
+/* ---------- INIT ---------- */
+function init(){
+  document.getElementById('specialtyLabel').textContent = DATA.settings.specialty || 'Fisioterapia';
+  fillSettingsForm();
 
   const todayEl = document.getElementById('todayLabel');
   const today = new Date();
@@ -4361,6 +4416,8 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
       }
       adminCredsWritable = true;
       await loadAgendaConfigFromSupabase();
+      fillSettingsForm(); // a tela de Configurações passa a mostrar o que veio do banco (antes ficava com os valores do carregamento inicial)
+      try{ await storageAPI.set(STORE_KEY, JSON.stringify(DATA), false); }catch(e){ console.error(e); }
       await loadPatientsFromSupabase();
       await loadAppointmentsFromSupabase();
       await loadAvailabilityFromSupabase();
@@ -5832,7 +5889,7 @@ function renderClinicsConfig(){
         </div>
         <div class="field">
           <label>Senha do profissional</label>
-          <input type="text" data-clinic-field="password" data-clinic-id="${c.id}" value="${escapeHtml(c.password || '')}" autocomplete="off">
+          <input type="text" data-clinic-field="password" data-clinic-id="${c.id}" value="${escapeHtml(pwdForInput(c.password))}" placeholder="${escapeHtml(pwdHint(c.password))}" autocomplete="off">
         </div>
       </div>
     </div>
@@ -6150,23 +6207,27 @@ document.getElementById('settingsForm').addEventListener('submit',(e)=>{
     alert('O PIN de acesso administrativo deve ter exatamente 5 números. Mantive o PIN anterior.');
   }
   const profLoginVal = document.getElementById('cfgProfessionalLogin').value.trim();
-  const profPasswordVal = document.getElementById('cfgProfessionalPassword').value;
+  let profPasswordVal = document.getElementById('cfgProfessionalPassword').value;
+  if(!profPasswordVal && isPwdHash(DATA.settings.professionalPassword)) profPasswordVal = DATA.settings.professionalPassword; // em branco = manter
+  if(isPwdHash(profPasswordVal) && profPasswordVal !== DATA.settings.professionalPassword) profPasswordVal = ''; // não aceita colar um "hash" como senha
   if(profLoginVal && profPasswordVal){
     DATA.settings.professionalLogin = profLoginVal;
     DATA.settings.professionalPassword = profPasswordVal;
   } else {
     document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
-    document.getElementById('cfgProfessionalPassword').value = DATA.settings.professionalPassword || '';
+    document.getElementById('cfgProfessionalPassword').value = pwdForInput(DATA.settings.professionalPassword);
     alert('Login e senha do administrador não podem ficar em branco. Mantive os anteriores.');
   }
   const recLoginVal = document.getElementById('cfgReceptionLogin').value.trim();
-  const recPasswordVal = document.getElementById('cfgReceptionPassword').value;
+  let recPasswordVal = document.getElementById('cfgReceptionPassword').value;
+  if(!recPasswordVal && isPwdHash(DATA.settings.receptionPassword)) recPasswordVal = DATA.settings.receptionPassword; // em branco = manter
+  if(isPwdHash(recPasswordVal) && recPasswordVal !== DATA.settings.receptionPassword) recPasswordVal = ''; // não aceita colar um "hash" como senha
   if(recLoginVal && recPasswordVal){
     DATA.settings.receptionLogin = recLoginVal;
     DATA.settings.receptionPassword = recPasswordVal;
   } else {
     document.getElementById('cfgReceptionLogin').value = DATA.settings.receptionLogin || '';
-    document.getElementById('cfgReceptionPassword').value = DATA.settings.receptionPassword || '';
+    document.getElementById('cfgReceptionPassword').value = pwdForInput(DATA.settings.receptionPassword);
     alert('Login e senha da recepção não podem ficar em branco. Mantive os anteriores.');
   }
   document.querySelectorAll('#clinicsConfig [data-clinic-id]').forEach(el=>{
