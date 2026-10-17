@@ -1641,6 +1641,34 @@ body.pub-booking #publicBanner{display:none}
   #publicAuthScreen .auth-main,#publicClinicScreen .auth-main,#publicProfessionalScreen .auth-main{position:relative}
 }
 .clinic-pick-btn{border-radius:12px}
+
+/* v52b - barra "Mostrar lista" fora da ficha (aparece com a lista oculta, mesmo sem paciente selecionado) */
+.pt-showbar{display:none;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+.pt-showbar .pf-sel{flex:1;min-width:150px;max-width:320px}
+.pf-bar{display:none!important}
+
+/* v52b - topo do celular (equipe): o sino deixava de ser fixo no canto e sobrepunha o botao "Acesso publico" */
+@media (max-width:900px){
+  html body.staff-header .alerts-wrap{position:relative;top:auto;right:auto;order:5}
+  html body.staff-header .head-right{gap:8px}
+  html body.staff-header .head-right .today{flex:1 1 0;min-width:0;text-align:right;font-size:.8rem}
+}
+
+/* ===== v53 - profissionais e pacientes inativos ===== */
+.pro-filter,.pt-status{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
+.pro-filter button,.pt-status button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:500;color:var(--ink);cursor:pointer}
+.pro-filter button.on,.pt-status button.on{background:var(--teal-deep);border-color:var(--teal-deep);color:#fff}
+.clinic-card.cc-acc > .clinic-card-head > button:first-of-type{margin-left:auto}
+.inactive-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.inactive-card h3{margin:0 0 2px;font-family:var(--serif);font-size:1.1rem;color:var(--teal-deep)}
+.inactive-card .ic-sub{font-size:.8rem;color:var(--ink-soft);margin-bottom:10px}
+.inactive-card .ic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 18px;margin-bottom:12px}
+.inactive-card .ic-grid small{display:block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.inactive-card .ic-grid b{font-weight:600;font-size:.88rem}
+.inactive-card .ic-act{display:flex;gap:8px;flex-wrap:wrap}
+.inactive-card .ic-st{font-size:.78rem;color:var(--ink-soft);margin-top:8px;min-height:1em}
+.pf-inactive{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FFF1D0;border:1px solid #E5C477;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.86rem}
+.pf-inactive b{flex:1;min-width:180px}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
@@ -2924,7 +2952,7 @@ let DATA = {
 // Financeiro ter algo pra usar mesmo antes do carregamento do Supabase
 // terminar (ver publishClinicNamesToWindow, definida mais abaixo).
 window.__agendaClinicNames = {};
-DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; });
+DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; (window.__agendaClinicActive = window.__agendaClinicActive || {})[c.id] = c.active !== false; });
 
 // ============================================================
 // EDGE FUNCTIONS — PAGAMENTO (Mercado Pago via Supabase)
@@ -3123,7 +3151,7 @@ function deletePatientFromSupabase(patientId){
    mesmo jeito que pacientes e agendamentos já são, para virar fonte de
    verdade compartilhada entre todos os dispositivos/logins. */
 function deletedPatientToRow(p){
-  const { appointments, deletedAt, clinicName, password: _senhaNaoSalva, ...patientFields } = p;
+  const { appointments, deletedAt, clinicName, ...patientFields } = p;
   return {
     id: p.id,
     clinic_id: p.clinicId || null,
@@ -3393,6 +3421,7 @@ function agendaClinicToRow(c){
   return {
     id: c.id, name: c.name, specialty: c.specialty || null, procedures: Array.isArray(c.procedures) ? c.procedures : [],
     start_hour: c.start || null, end_hour: c.end || null,
+    ...(window.__agendaActiveColMissing ? {} : { active: c.active !== false }),
     ...(adminCredsWritable ? {
       login: c.login || null, password: c.password || null,
       reception_login: c.receptionLogin || null, reception_password: c.receptionPassword || null
@@ -3403,6 +3432,7 @@ function rowToAgendaClinic(r){
   return {
     id: r.id, name: r.name, specialty: r.specialty || '', procedures: Array.isArray(r.procedures) ? r.procedures : [],
     start: r.start_hour || '07:00', end: r.end_hour || '19:00',
+    active: r.active !== false,
     login: r.login || '', password: r.password || '', receptionLogin: r.reception_login || '', receptionPassword: r.reception_password || ''
   };
 }
@@ -3447,10 +3477,21 @@ async function syncAgendaConfigToSupabase(){
         // ainda na tabela (banco antigo, sem a migração), tenta de novo sem
         // ela — assim nome/especialidade/horário/login continuam
         // sincronizando normalmente enquanto a coluna não é criada.
-        if(String(error.message||'').toLowerCase().includes('procedures')){
-          const fallbackRows = clinicRows.map(({procedures, ...rest})=>rest);
-          const { error: fbErr } = await sbClient.from('agenda_clinics').upsert(fallbackRows);
-          if(fbErr) console.error('Falha ao sincronizar clínicas com o Supabase (sem procedures)', fbErr);
+        // v53: a coluna "active" (profissional inativo) tambem pode nao existir ainda.
+        let em = String(error.message||'').toLowerCase(), drop = [], rows = clinicRows;
+        for(let tries = 0; tries < 2 && (em.includes('procedures') || em.includes('active')); tries++){
+          if(em.includes('active') && !drop.includes('active')){ drop.push('active'); window.__agendaActiveColMissing = true; }
+          else if(em.includes('procedures') && !drop.includes('procedures')) drop.push('procedures');
+          else break;
+          rows = clinicRows.map(r=>{ const o = {...r}; drop.forEach(k=>{ delete o[k]; }); return o; });
+          const { error: fbErr } = await sbClient.from('agenda_clinics').upsert(rows);
+          if(!fbErr){ em = ''; break; }
+          console.error('Falha ao sincronizar clínicas com o Supabase (sem ' + drop.join('/') + ')', fbErr);
+          em = String(fbErr.message||'').toLowerCase();
+        }
+        if(drop.includes('active') && !window.__agendaActiveWarned){
+          window.__agendaActiveWarned = true;
+          alert('Atenção: o banco ainda não tem a coluna "active" na tabela agenda_clinics. O profissional foi marcado como inativo neste aparelho, mas isso NÃO ficou gravado no banco. Rode a migração (arquivo migracao-inativos.sql) no Supabase.');
         }
       }
     }
@@ -3463,10 +3504,8 @@ async function syncAgendaConfigToSupabase(){
         if(delErr) console.error('Falha ao excluir clínicas removidas no Supabase', delErr);
       }
     }
-    const settingsRow = settingsToRow();
-    const { error: settingsErr } = await sbClient.from('agenda_settings').upsert(settingsRow);
+    const { error: settingsErr } = await sbClient.from('agenda_settings').upsert(settingsToRow());
     if(settingsErr) console.error('Falha ao sincronizar configurações com o Supabase', settingsErr);
-    else if(adminCredsWritable) await refreshStaffPasswordHashes({ settings: settingsRow, clinics: clinicRows });
   }catch(e){ console.error('Falha ao sincronizar configurações/clínicas com o Supabase', e); }
 }
 // Mesma lógica de "semente na primeira sincronização" usada no financeiro:
@@ -3524,6 +3563,7 @@ async function loadAgendaConfigFromSupabase(){
 }
 let currentWeekStart = mondayOf(new Date());
 let selectedPatientId = null;
+let patientStatusFilter = 'ativos'; // v53: filtro da lista de pacientes (ativos / inativos)
 let editingApptId = null;
 let editingPatientId = null;
 let apptType = 'agendamento';
@@ -3691,7 +3731,7 @@ async function loadData(){
     else { await loadMyPublicDataFromSupabase(); }
   }
   await loadPublicSignalConfig();
-  adminClinicId = DATA.clinics[0].id;
+  adminClinicId = firstActiveClinicId();
   init();
 }
 async function saveData(){
@@ -3710,7 +3750,7 @@ async function saveData(){
 // exibido no Financeiro sempre acompanhe o da Agenda.
 function publishClinicNamesToWindow(){
   window.__agendaClinicNames = {};
-  DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; });
+  DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; (window.__agendaClinicActive = window.__agendaClinicActive || {})[c.id] = c.active !== false; });
   if(typeof window.__onAgendaClinicNamesChanged === 'function'){
     try{ window.__onAgendaClinicNamesChanged(); }catch(e){ console.error(e); }
   }
@@ -3956,72 +3996,19 @@ function isPastSlot(iso, hour){
   return h <= now.getHours();
 }
 
-/* ---------- SENHAS COM HASH ----------
-   No banco (Supabase) as senhas de admin/recepção/profissionais ficam guardadas como hash bcrypt
-   ($2a$10$...). O app nunca consegue "ler" a senha de volta: a tela mostra o campo vazio com o aviso
-   "Definida. Deixe em branco para manter" e só envia uma senha nova se a pessoa digitar uma. */
-const PWD_KEEP_HINT = 'Definida. Deixe em branco para manter';
-function isPwdHash(v){ return typeof v === 'string' && /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(v); }
-function pwdForInput(v){ return isPwdHash(v) ? '' : (v || ''); }
-function pwdHint(v){ return isPwdHash(v) ? PWD_KEEP_HINT : ''; }
-function fillSettingsForm(){
+/* ---------- INIT ---------- */
+function init(){
+  document.getElementById('specialtyLabel').textContent = DATA.settings.specialty || 'Fisioterapia';
   document.getElementById('cfgClinicName').value = DATA.settings.clinicName || '';
   document.getElementById('cfgSpecialty').value = DATA.settings.specialty || '';
   document.getElementById('cfgAllowSaturday').checked = DATA.settings.allowSaturday !== false;
   document.getElementById('cfgAllowMultiClinic').checked = DATA.settings.allowMultiClinicSameDay === true;
   document.getElementById('cfgAccessPin').value = DATA.settings.accessPin || '13579';
   document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
-  const pp = document.getElementById('cfgProfessionalPassword');
-  pp.value = pwdForInput(DATA.settings.professionalPassword); pp.placeholder = pwdHint(DATA.settings.professionalPassword);
+  document.getElementById('cfgProfessionalPassword').value = DATA.settings.professionalPassword || '';
   document.getElementById('cfgReceptionLogin').value = DATA.settings.receptionLogin || '';
-  const rp = document.getElementById('cfgReceptionPassword');
-  rp.value = pwdForInput(DATA.settings.receptionPassword); rp.placeholder = pwdHint(DATA.settings.receptionPassword);
+  document.getElementById('cfgReceptionPassword').value = DATA.settings.receptionPassword || '';
   renderClinicsConfig();
-}
-// Depois de salvar, troca no app qualquer senha digitada (texto) pelo hash que o banco gravou, e limpa
-// a cópia local. Só mexe num campo da tela se ele ainda estiver com o texto salvo (ou vazio).
-async function refreshStaffPasswordHashes(sent){
-  if(!sbClient || !adminCredsWritable || !sent) return;
-  try{
-    const [sRes, cRes] = await Promise.all([
-      sbClient.from('agenda_settings').select('professional_password,reception_password').eq('id', 'main'),
-      sbClient.from('agenda_clinics').select('id,password,reception_password')
-    ]);
-    let mudou = false;
-    const paint = (el, antigo, novo) => {
-      if(!el) return;
-      if(el.value === '' || el.value === antigo){ el.value = ''; el.placeholder = PWD_KEEP_HINT; }
-    };
-    const s = sRes && sRes.data && sRes.data[0];
-    if(s){
-      if(isPwdHash(s.professional_password) && DATA.settings.professionalPassword !== s.professional_password
-         && DATA.settings.professionalPassword === sent.settings.professional_password){
-        const antigo = DATA.settings.professionalPassword; DATA.settings.professionalPassword = s.professional_password; mudou = true;
-        paint(document.getElementById('cfgProfessionalPassword'), antigo);
-      }
-      if(isPwdHash(s.reception_password) && DATA.settings.receptionPassword !== s.reception_password
-         && DATA.settings.receptionPassword === sent.settings.reception_password){
-        const antigo = DATA.settings.receptionPassword; DATA.settings.receptionPassword = s.reception_password; mudou = true;
-        paint(document.getElementById('cfgReceptionPassword'), antigo);
-      }
-    }
-    ((cRes && cRes.data) || []).forEach(r=>{
-      const c = DATA.clinics.find(x=>x.id === r.id); if(!c) return;
-      const enviada = (sent.clinics || []).find(x=>x.id === r.id) || {};
-      if(isPwdHash(r.password) && c.password !== r.password && c.password === enviada.password){
-        const antigo = c.password; c.password = r.password; mudou = true;
-        paint(document.querySelector('#clinicsConfig [data-clinic-field="password"][data-clinic-id="' + r.id + '"]'), antigo);
-      }
-      if(isPwdHash(r.reception_password) && c.receptionPassword !== r.reception_password && c.receptionPassword === enviada.reception_password){ c.receptionPassword = r.reception_password; mudou = true; }
-    });
-    if(mudou){ try{ await storageAPI.set(STORE_KEY, JSON.stringify(DATA), false); }catch(e){ console.error(e); } }
-  }catch(e){ console.error('Falha ao atualizar as senhas (hash) deste aparelho', e); }
-}
-
-/* ---------- INIT ---------- */
-function init(){
-  document.getElementById('specialtyLabel').textContent = DATA.settings.specialty || 'Fisioterapia';
-  fillSettingsForm();
 
   const todayEl = document.getElementById('todayLabel');
   const today = new Date();
@@ -4334,8 +4321,8 @@ document.getElementById('accessPinGateForm').addEventListener('submit',(e)=>{
     enteredAccessPin = typed;
     document.getElementById('accessPinGateOverlay').classList.remove('active');
     const sel = document.getElementById('pinClinic');
-    sel.innerHTML = DATA.clinics.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-    sel.value = DATA.clinics.find(c=>c.id===adminClinicId) ? adminClinicId : DATA.clinics[0].id;
+    sel.innerHTML = activeClinics().map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+    sel.value = activeClinics().find(c=>c.id===adminClinicId) ? adminClinicId : firstActiveClinicId();
     document.getElementById('pinRole').value = 'admin';
     document.getElementById('pinLogin').value = '';
     document.getElementById('pinInput').value = '';
@@ -4386,7 +4373,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
         }
         errEl.classList.remove('show');
         document.getElementById('pinOverlay').classList.remove('active');
-        if(!DATA.clinics.find(c=>c.id===adminClinicId)) adminClinicId = DATA.clinics[0].id;
+        if(!activeClinics().find(c=>c.id===adminClinicId)) adminClinicId = firstActiveClinicId();
         currentRole = role;
         setPublicMode(false);
         renderPatientList();
@@ -4396,6 +4383,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
         if(!clinic || login !== clinic.login || pass !== clinic.password){
           throw new Error('Credenciais locais inválidas (modo modelo)');
         }
+        if(!isClinicActive(clinic)) throw new Error('profissional inativo');
         errEl.classList.remove('show');
         document.getElementById('pinOverlay').classList.remove('active');
         adminClinicId = clinicId;
@@ -4416,8 +4404,6 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
       }
       adminCredsWritable = true;
       await loadAgendaConfigFromSupabase();
-      fillSettingsForm(); // a tela de Configurações passa a mostrar o que veio do banco (antes ficava com os valores do carregamento inicial)
-      try{ await storageAPI.set(STORE_KEY, JSON.stringify(DATA), false); }catch(e){ console.error(e); }
       await loadPatientsFromSupabase();
       await loadAppointmentsFromSupabase();
       await loadAvailabilityFromSupabase();
@@ -4451,7 +4437,7 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
       await loadAvailabilityFromSupabase();
       errEl.classList.remove('show');
       document.getElementById('pinOverlay').classList.remove('active');
-      if(!DATA.clinics.find(c=>c.id===adminClinicId)) adminClinicId = DATA.clinics[0].id;
+      if(!activeClinics().find(c=>c.id===adminClinicId)) adminClinicId = firstActiveClinicId();
       currentRole = role;
       setPublicMode(false);
       renderPatientList();
@@ -4474,6 +4460,11 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
         if(sessErr) throw new Error('Sessão recusada pelo Supabase: ' + sessErr.message);
       }
       await loadPublicClinicsAndSettings();
+      {
+        // v53: profissional inativo nao entra (a visao publica esconde ou marca o profissional inativo)
+        const mine = DATA.clinics.find(c=>c.id===clinicId);
+        if(!mine || mine.active === false){ await switchToAnonymousSupabaseSession(); throw new Error('profissional inativo'); }
+      }
       await loadPatientsFromSupabase();
       await loadAppointmentsFromSupabase();
       await loadAvailabilityFromSupabase();
@@ -4491,6 +4482,8 @@ document.getElementById('pinForm').addEventListener('submit', async (e)=>{
       let seg = 0; try{ seg = Number(JSON.parse(err.body).retry_after_seconds) || 0; }catch(e2){}
       const min = Math.max(1, Math.ceil(seg / 60));
       errEl.textContent = 'Muitas tentativas incorretas. Aguarde cerca de ' + min + ' minuto' + (min > 1 ? 's' : '') + ' e tente de novo.';
+    } else if(/profissional inativo/i.test(motivo)){
+      errEl.textContent = 'Este profissional está inativo. Procure o administrador para reativar o acesso.';
     } else {
       errEl.textContent = /credenciais inv/i.test(motivo) ? (role === 'admin' ? 'PIN, login ou senha incorretos.' : 'Login ou senha incorretos.') : 'Não foi possível entrar: ' + motivo.slice(0, 220);
     }
@@ -4576,10 +4569,10 @@ function renderAdminClinicTabs(){
     wrap.style.display = 'none';
     return;
   }
-  if(!DATA.clinics.find(c=>c.id===adminClinicId)) adminClinicId = DATA.clinics[0].id;
+  if(!activeClinics().find(c=>c.id===adminClinicId)) adminClinicId = firstActiveClinicId();
   const activePanel = document.querySelector('.panel.active');
   const isAgendaPanel = activePanel && activePanel.id === 'panel-agenda' && (currentRole === 'admin' || currentRole === 'receptionist');
-  wrap.innerHTML = DATA.clinics.map(c=>
+  wrap.innerHTML = activeClinics().map(c=>
     `<button data-clinic="${c.id}" class="${((!agendaShowAll || !isAgendaPanel) && c.id===adminClinicId)?'active':''}">${escapeHtml(c.name)}</button>`
   ).join('') + (isAgendaPanel ? `<button data-clinic-all="1" class="tab-todas ${agendaShowAll?'active':''}">Todas</button>` : '');
   wrap.querySelectorAll('button[data-clinic]').forEach(b=>{
@@ -4605,11 +4598,32 @@ function renderAdminClinicTabs(){
   wrap.style.display = (activePanel && (activePanel.id==='panel-agenda' || activePanel.id==='panel-patients')) ? 'flex' : 'none';
 }
 
+/* ---------- v53: PROFISSIONAIS E PACIENTES INATIVOS ----------
+   Profissional inativo: login/senha deixam de valer, sai das telas e da tela do paciente,
+   mas NADA e apagado (agenda, pacientes, anexos, financeiro). Paciente inativo: sai da lista
+   de ativos; o marcador fica no campo "conditions" da ficha (nao usado em outro lugar). */
+const INACTIVE_MARK = '__inativo';
+function isClinicActive(x){
+  const c = (x && typeof x === 'object') ? x : DATA.clinics.find(k=>k.id===x);
+  return !c || c.active !== false;
+}
+function activeClinics(){ return DATA.clinics.filter(c=>c.active !== false); }
+function inactiveClinics(){ return DATA.clinics.filter(c=>c.active === false); }
+function firstActiveClinicId(){ const c = activeClinics()[0] || DATA.clinics[0]; return c ? c.id : null; }
+function isPatientInactive(p){ return !!(p && Array.isArray(p.conditions) && p.conditions.indexOf(INACTIVE_MARK) >= 0); }
+function setPatientInactive(p, flag){
+  const arr = (Array.isArray(p.conditions) ? p.conditions : []).filter(x=>x !== INACTIVE_MARK);
+  if(flag) arr.push(INACTIVE_MARK);
+  p.conditions = arr;
+  try{ syncPatientToSupabase(p); }catch(e){ console.error(e); }
+  saveData();
+}
+
 /* ---------- ADMIN AGENDA RENDER ---------- */
 function allClinicsHourRange(){
-  if(!DATA.clinics.length) return hourRange(null);
+  if(!activeClinics().length) return hourRange(null);
   let sh = 24, eh = 0;
-  DATA.clinics.forEach(c=>{
+  activeClinics().forEach(c=>{
     const [csh] = ((c && c.start) || '07:00').split(':').map(Number);
     const [ceh] = ((c && c.end) || '19:00').split(':').map(Number);
     if(csh < sh) sh = csh;
@@ -4713,7 +4727,7 @@ function renderAgendaAllProfessionalsDay(){
   // tenha algum agendamento nessa data (pra nunca esconder um compromisso
   // já existente). Quem não atende e não tem nada marcado nesse dia nem
   // aparece como coluna.
-  const professionals = DATA.clinics.filter(p =>
+  const professionals = activeClinics().filter(p =>
     isAvailableDay(iso, p.id) || DATA.appointments.some(a => a.date===iso && a.clinicId===p.id)
   );
 
@@ -4992,7 +5006,7 @@ document.getElementById('blockDayForm').addEventListener('submit', (e)=>{
 /* ---------- APPOINTMENT / BLOCK MODAL ---------- */
 function fillPatientSelect(selectedId){
   const sel = document.getElementById('apptPatient');
-  const clinicPatients = DATA.patients.filter(p=>p.clinicId===adminClinicId);
+  const clinicPatients = DATA.patients.filter(p=>p.clinicId===adminClinicId && (!isPatientInactive(p) || p.id===selectedId));
   const newOption = '<option value="__new__">+ Cadastrar novo paciente</option>';
   sel.innerHTML = newOption + clinicPatients.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   sel.value = selectedId || '__new__';
@@ -5367,11 +5381,11 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
 function renderPatientList(){
   const q = (document.getElementById('patientSearch').value || '').toLowerCase();
   const list = DATA.patients
-    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q))
+    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q) && (patientStatusFilter === 'inativos') === isPatientInactive(p))
     .sort((a,b)=>a.name.localeCompare(b.name));
   const container = document.getElementById('patientList');
   if(!list.length){
-    container.innerHTML = '<p class="empty-note">Nenhum paciente encontrado.</p>';
+    container.innerHTML = '<p class="empty-note">' + (patientStatusFilter === 'inativos' ? 'Nenhum paciente inativo.' : 'Nenhum paciente encontrado.') + '</p>';
     return;
   }
   container.innerHTML = list.map(p=>{
@@ -5840,10 +5854,11 @@ function downloadJson(obj, filename){
 
 function renderClinicsConfig(){
   const wrap = document.getElementById('clinicsConfig');
-  wrap.innerHTML = DATA.clinics.map((c,i)=>`
+  wrap.innerHTML = activeClinics().map((c,i)=>`
     <div class="clinic-card">
       <div class="clinic-card-head">
         <span class="clinic-card-num">Profissional ${i+1}</span>
+        <button type="button" class="btn secondary small" data-inactivate-clinic="${c.id}">Inativar profissional</button>
         <button type="button" class="btn danger small" data-remove-clinic="${c.id}">Remover profissional</button>
       </div>
       <div class="field-row" style="align-items:flex-end;">
@@ -5889,7 +5904,7 @@ function renderClinicsConfig(){
         </div>
         <div class="field">
           <label>Senha do profissional</label>
-          <input type="text" data-clinic-field="password" data-clinic-id="${c.id}" value="${escapeHtml(pwdForInput(c.password))}" placeholder="${escapeHtml(pwdHint(c.password))}" autocomplete="off">
+          <input type="text" data-clinic-field="password" data-clinic-id="${c.id}" value="${escapeHtml(c.password || '')}" autocomplete="off">
         </div>
       </div>
     </div>
@@ -6041,7 +6056,7 @@ function addProcedureTag(clinicId){
   renderProceduresPicker(c);
 }
 function removeClinic(id){
-  if(DATA.clinics.length <= 1){
+  if(activeClinics().length <= 1){
     alert('Não é possível remover o único profissional cadastrado.');
     return;
   }
@@ -6086,7 +6101,7 @@ function removeClinic(id){
     if(rule && (rule.fixedClinicId===id || rule.otherClinicId===id)) delete DATA.weekdaySplitRules[dow];
   });
   delete availCalMonthOffset[id];
-  if(adminClinicId === id) adminClinicId = DATA.clinics[0].id;
+  if(adminClinicId === id) adminClinicId = firstActiveClinicId();
   if(selectedPublicClinicId === id){ selectedPublicClinicId = null; selectedSpecialty = null; }
 
   saveData();
@@ -6207,27 +6222,23 @@ document.getElementById('settingsForm').addEventListener('submit',(e)=>{
     alert('O PIN de acesso administrativo deve ter exatamente 5 números. Mantive o PIN anterior.');
   }
   const profLoginVal = document.getElementById('cfgProfessionalLogin').value.trim();
-  let profPasswordVal = document.getElementById('cfgProfessionalPassword').value;
-  if(!profPasswordVal && isPwdHash(DATA.settings.professionalPassword)) profPasswordVal = DATA.settings.professionalPassword; // em branco = manter
-  if(isPwdHash(profPasswordVal) && profPasswordVal !== DATA.settings.professionalPassword) profPasswordVal = ''; // não aceita colar um "hash" como senha
+  const profPasswordVal = document.getElementById('cfgProfessionalPassword').value;
   if(profLoginVal && profPasswordVal){
     DATA.settings.professionalLogin = profLoginVal;
     DATA.settings.professionalPassword = profPasswordVal;
   } else {
     document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
-    document.getElementById('cfgProfessionalPassword').value = pwdForInput(DATA.settings.professionalPassword);
+    document.getElementById('cfgProfessionalPassword').value = DATA.settings.professionalPassword || '';
     alert('Login e senha do administrador não podem ficar em branco. Mantive os anteriores.');
   }
   const recLoginVal = document.getElementById('cfgReceptionLogin').value.trim();
-  let recPasswordVal = document.getElementById('cfgReceptionPassword').value;
-  if(!recPasswordVal && isPwdHash(DATA.settings.receptionPassword)) recPasswordVal = DATA.settings.receptionPassword; // em branco = manter
-  if(isPwdHash(recPasswordVal) && recPasswordVal !== DATA.settings.receptionPassword) recPasswordVal = ''; // não aceita colar um "hash" como senha
+  const recPasswordVal = document.getElementById('cfgReceptionPassword').value;
   if(recLoginVal && recPasswordVal){
     DATA.settings.receptionLogin = recLoginVal;
     DATA.settings.receptionPassword = recPasswordVal;
   } else {
     document.getElementById('cfgReceptionLogin').value = DATA.settings.receptionLogin || '';
-    document.getElementById('cfgReceptionPassword').value = pwdForInput(DATA.settings.receptionPassword);
+    document.getElementById('cfgReceptionPassword').value = DATA.settings.receptionPassword || '';
     alert('Login e senha da recepção não podem ficar em branco. Mantive os anteriores.');
   }
   document.querySelectorAll('#clinicsConfig [data-clinic-id]').forEach(el=>{
@@ -6354,7 +6365,7 @@ function renderWeekdayOwnersList(){
     if(dow===6 && !allowSaturday){
       return `<div class="weekday-owner-row"><span class="wname">${name}</span><span class="wfree">desativado (sábado não atende)</span></div>`;
     }
-    const clinicIds = clinicMap[dow] ? Array.from(clinicMap[dow]) : [];
+    const clinicIds = clinicMap[dow] ? Array.from(clinicMap[dow]).filter(id=>isClinicActive(id)) : [];
     const rule = getWeekdaySplitRule(dow);
     if(clinicIds.length){
       const chips = clinicIds.map(id=>{
@@ -6456,11 +6467,11 @@ function renderAvailabilityPanel(){
   extendPermanentAvailability();
   const clinicSel = document.getElementById('availClinic');
   const prevVal = clinicSel.value;
-  clinicSel.innerHTML = DATA.clinics.map(c=>{
+  clinicSel.innerHTML = activeClinics().map(c=>{
     const label = c.specialty ? `${c.name} - ${c.specialty}` : c.name;
     return `<option value="${c.id}">${escapeHtml(label)}</option>`;
   }).join('');
-  clinicSel.value = DATA.clinics.find(c=>c.id===prevVal) ? prevVal : DATA.clinics[0].id;
+  clinicSel.value = activeClinics().find(c=>c.id===prevVal) ? prevVal : firstActiveClinicId();
 
   const todayIso = fmtDate(new Date());
   const startInput = document.getElementById('availStart');
@@ -6521,14 +6532,14 @@ function renderAvailabilityCalendars(){
   if(!wrap) return;
   const today = new Date();
   const todayIso = fmtDate(today);
-  if(!DATA.clinics.length){
+  if(!activeClinics().length){
     wrap.innerHTML = '<p class="empty-note">Nenhuma clínica cadastrada.</p>';
     return;
   }
   const dateClinicCount = {};
   DATA.availability.forEach(a=>{ dateClinicCount[a.date] = (dateClinicCount[a.date]||0)+1; });
   const maxOffset = AVAIL_CAL_TOTAL_MONTHS - AVAIL_CAL_VISIBLE_MONTHS;
-  wrap.innerHTML = DATA.clinics.map(c=>{
+  wrap.innerHTML = activeClinics().map(c=>{
     const markedSet = new Set(DATA.availability.filter(a=>a.clinicId===c.id).map(a=>a.date));
     const offset = Math.min(availCalMonthOffset[c.id] || 0, maxOffset);
     let monthsHtml = '';
@@ -6794,14 +6805,14 @@ document.getElementById('availApplyBtn').addEventListener('click', ()=>{
 /* ================= PUBLIC AREA (patient portal) ================= */
 function getSpecialties(){
   const seen = [];
-  DATA.clinics.forEach(c=>{
+  activeClinics().forEach(c=>{
     const s = (c.specialty || '').trim() || 'Geral';
     if(!seen.includes(s)) seen.push(s);
   });
   return seen;
 }
 function clinicsBySpecialty(specialty){
-  return DATA.clinics.filter(c => ((c.specialty || '').trim() || 'Geral') === specialty);
+  return activeClinics().filter(c => ((c.specialty || '').trim() || 'Geral') === specialty);
 }
 function renderPublicClinicScreen(){
   const list = document.getElementById('publicClinicList');
@@ -7464,6 +7475,8 @@ document.getElementById('bookForm').addEventListener('submit', async (e)=>{
   const whomValue = document.getElementById('bookForWhom').value;
   let targetPatientId = loggedPatientId;
   let bookedBySelf = true;
+  // v53: paciente inativo que volta a agendar pelo site passa a ativo de novo
+  try{ [loggedPatientId, whomValue].forEach(id=>{ const pp = DATA.patients.find(x=>x.id===id); if(pp && isPatientInactive(pp)) setPatientInactive(pp, false); }); }catch(e){ console.error(e); }
 
   if(whomValue === '__new__'){
     const depName = document.getElementById('bookDepName').value.trim();
@@ -10087,7 +10100,7 @@ document.querySelectorAll('.filters').forEach(group=>{
 // funcionalidade ligada no mural. Clínicas removidas (inativas) nunca
 // entram aqui — não dá pra lançar coisa nova para elas.
 function fillClinicSelect(sel, featureKey){
-  const list = DATA.clinics.filter(c=> c.active !== false && (!featureKey || clinicFeatureActive(c, featureKey)));
+  const list = DATA.clinics.filter(c=> c.active !== false && !(window.__agendaClinicActive && window.__agendaClinicActive[c.id] === false) && (!featureKey || clinicFeatureActive(c, featureKey)));
   sel.innerHTML = list.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   if(!list.length){
     sel.innerHTML = `<option value="" disabled selected>Nenhuma clínica disponível para isso</option>`;
@@ -10608,7 +10621,16 @@ function applyPublicSignalConfig(rows){
     ensureClinicShape(c);
   });
 }
-window.FinanceiroAPI = { registrarConsultaConcluida, desfazerConsultaConcluida, syncAfterProfessionalLogin, getSignalInfo, registrarSinalPendente, confirmarSinalPago, getReceivableInfo, atualizarCobrancaPendente, applyPublicSignalConfig };
+function getClinicFinanceBackup(id){
+  const own = x => x && x.clinicId === id;
+  return {
+    receivables: (DATA.receivables || []).filter(own),
+    expenses: (DATA.expenses || []).filter(own),
+    recurringExpenses: (DATA.recurringExpenses || []).filter(own),
+    config: (DATA.clinics || []).filter(c=>c.id===id)
+  };
+}
+window.FinanceiroAPI = { getClinicFinanceBackup, registrarConsultaConcluida, desfazerConsultaConcluida, syncAfterProfessionalLogin, getSignalInfo, registrarSinalPendente, confirmarSinalPago, getReceivableInfo, atualizarCobrancaPendente, applyPublicSignalConfig };
 
 /* =========================================================
    INIT
@@ -10688,6 +10710,21 @@ initFinanceiro();
   hb.type='button';hb.className='btn small secondary pt-hide';hb.id='patientsHideBtn';hb.textContent='\u00ab Ocultar lista';
   head.parentNode.insertBefore(hb,head);
   hb.addEventListener('click',function(){setHid(true);renderPatientDetail();});
+  /* barra que aparece quando a lista esta oculta: fica FORA da ficha, entao existe mesmo sem paciente selecionado */
+  var bar=el('div','pt-showbar'),show=el('button','btn small secondary','\u2630 Mostrar lista'),sel=el('select','pf-sel'),nw=el('button','btn small','+ Novo paciente');
+  bar.id='ptShowBar';show.type='button';show.id='patientsShowBtn';nw.type='button';nw.id='patientsNewBtn2';sel.id='pfSwitch';sel.setAttribute('aria-label','Trocar paciente');
+  show.addEventListener('click',function(){setHid(false);syncBar();renderPatientDetail();});
+  nw.addEventListener('click',function(){document.getElementById('newPatientBtn').click();});
+  sel.addEventListener('change',function(){selectedPatientId=sel.value||null;renderPatientList();renderPatientDetail();});
+  bar.appendChild(show);bar.appendChild(sel);bar.appendChild(nw);layout.parentNode.insertBefore(bar,layout);
+  function syncBar(){
+    bar.style.display=layout.classList.contains('lh')?'flex':'none';
+    var ps=DATA.patients.filter(function(x){return x.clinicId===adminClinicId;}).sort(function(a,b){return a.name.localeCompare(b.name);});
+    sel.innerHTML='';
+    var ph=el('option',null,ps.length?'Selecione um paciente':'Nenhum paciente cadastrado');ph.value='';sel.appendChild(ph);
+    ps.forEach(function(x){var o=el('option',null,x.name);o.value=x.id;if(x.id===selectedPatientId)o.selected=true;sel.appendChild(o);});
+    sel.disabled=!ps.length;
+  }
   var sec=document.getElementById('pAttachmentsSection'),home=sec.parentNode,homeNext=sec.nextSibling;
   function restore(){if(sec.parentNode!==home){home.insertBefore(sec,homeNext&&homeNext.parentNode===home?homeNext:null);}}
   function attach(p,pane){
@@ -10712,13 +10749,7 @@ initFinanceiro();
     var completed=cnt?((cnt.textContent.match(/(\d+)\s*$/)||[0,'0'])[1]):'0';
     var nextTxt=meta.lastElementChild.querySelector('strong').textContent;
     var clinic=DATA.clinics.find(function(c){return c.id===p.clinicId;});
-    var wrap=el('div','pf'),bar=el('div','pf-bar'),show=el('button','btn small secondary','\u2630 Mostrar lista'),sel=el('select','pf-sel');
-    show.type='button';show.id='patientsShowBtn';sel.id='pfSwitch';sel.setAttribute('aria-label','Trocar paciente');
-    DATA.patients.filter(function(x){return x.clinicId===adminClinicId;}).sort(function(a,b){return a.name.localeCompare(b.name);}).forEach(function(x){
-      var o=el('option',null,x.name);o.value=x.id;if(x.id===p.id)o.selected=true;sel.appendChild(o);});
-    show.addEventListener('click',function(){setHid(false);renderPatientDetail();});
-    sel.addEventListener('change',function(){selectedPatientId=sel.value;renderPatientList();renderPatientDetail();});
-    bar.appendChild(show);bar.appendChild(sel);wrap.appendChild(bar);
+    var wrap=el('div','pf');
     var hd=el('div','pf-head'),id=el('div','pf-id'),h2=el('h2',null,p.name);
     hd.appendChild(el('span','pf-av',p.name.split(/\s+/).slice(0,2).map(function(w){return w.charAt(0);}).join('').toUpperCase()));
     id.appendChild(h2);id.appendChild(el('span','pf-sub',clinic?clinic.name:''));hd.appendChild(id);hd.appendChild(editBtn);wrap.appendChild(hd);
@@ -10758,7 +10789,9 @@ initFinanceiro();
     go(rec?'dad':curTab);
   }
   var oD=window.renderPatientDetail;
-  window.renderPatientDetail=function(){restore();var r=oD.apply(this,arguments);try{tabify();}catch(e){console.error(e);}return r;};
+  window.renderPatientDetail=function(){restore();var r=oD.apply(this,arguments);try{tabify();}catch(e){console.error(e);}try{syncBar();}catch(e){console.error(e);}return r;};
+  var oL=window.renderPatientList;
+  window.renderPatientList=function(){var r=oL.apply(this,arguments);try{syncBar();}catch(e){console.error(e);}return r;};
   var oM=window.openPatientModal;
   window.openPatientModal=function(){restore();return oM.apply(this,arguments);};
 })();
@@ -10938,6 +10971,10 @@ initFinanceiro();
           else add(G2,t,'ok',(r&&r.count!=null)?(r.count+' registro(s) vis\u00edvel(is) para este login'):'acess\u00edvel');
         }catch(e){add(G2,t,'fail',e.message||String(e));}}
     }
+    if(sbClient){
+      try{var q1=await tmo(sbClient.from('agenda_clinics').select('active').limit(1),8000);add(G2,'Coluna agenda_clinics.active (profissional inativo)',q1&&q1.error?'warn':'ok',q1&&q1.error?'Ausente: rode a migra\u00e7\u00e3o migracao-inativos.sql. Sem ela, o status inativo n\u00e3o fica gravado no banco.':'Existe.');}catch(e){add(G2,'Coluna agenda_clinics.active (profissional inativo)','warn',e.message||String(e));}
+      try{var q2=await tmo(sbClient.from('agenda_clinics_public').select('active').limit(1),8000);add(G2,'Vis\u00e3o agenda_clinics_public.active (esconde inativo do paciente e da recep\u00e7\u00e3o)',q2&&q2.error?'warn':'ok',q2&&q2.error?'Sem a coluna: recrie a vis\u00e3o incluindo "active" (migracao-inativos.sql).':'Existe.');}catch(e){add(G2,'Vis\u00e3o agenda_clinics_public.active','warn',e.message||String(e));}
+    }
     if(typeof LOCAL_TEST_MODE!=='undefined'&&LOCAL_TEST_MODE&&!sbClient){add(G3,'Worker, e-mail e pagamentos','skip','N\u00e3o testados em modo local (o servidor s\u00f3 aceita o site publicado).');}
     else{
       var w=await http(WORKER_URL,'GET');
@@ -10976,6 +11013,172 @@ initFinanceiro();
     main.appendChild(card);split.appendChild(h);split.appendChild(main);sc.appendChild(split);});
   var oP=window.renderPublicArea;
   window.renderPublicArea=function(){var r=oP.apply(this,arguments);try{var n=(DATA.settings&&DATA.settings.clinicName)||'';[].forEach.call(document.querySelectorAll('.auth-hero .hb'),function(e){e.textContent=n;});}catch(e){}return r;};
+})();
+</script>
+<script>
+/* v53 - interface de profissionais e pacientes inativos */
+(function(){
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+  function slug(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
+  function dl(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},1000);}
+  /* ---------- pacientes: filtro ativos/inativos ---------- */
+  var layout=document.querySelector('.patients-layout'),listCol=layout.firstElementChild,search=document.getElementById('patientSearch');
+  var ps=el('div','pt-status'),bA=el('button','on','Ativos'),bI=el('button',null,'Inativos');
+  bA.type=bI.type='button';bA.dataset.f='ativos';bI.dataset.f='inativos';ps.id='ptStatusFilter';ps.appendChild(bA);ps.appendChild(bI);
+  listCol.insertBefore(ps,search.closest('.patients-list-head')||listCol.querySelector('.patients-list-head')||listCol.firstChild);
+  function counts(){
+    var all=DATA.patients.filter(function(p){return p.clinicId===adminClinicId;}),ni=all.filter(isPatientInactive).length;
+    bA.textContent='Ativos ('+(all.length-ni)+')';bI.textContent='Inativos ('+ni+')';
+    bA.classList.toggle('on',patientStatusFilter==='ativos');bI.classList.toggle('on',patientStatusFilter==='inativos');
+  }
+  ps.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;patientStatusFilter=b.dataset.f;renderPatientList();});
+  var oL=window.renderPatientList;
+  window.renderPatientList=function(){var r=oL.apply(this,arguments);try{counts();}catch(e){console.error(e);}return r;};
+  var oD=window.renderPatientDetail;
+  window.renderPatientDetail=function(){var r=oD.apply(this,arguments);try{decorate();}catch(e){console.error(e);}return r;};
+  function decorate(){
+    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;}),pf=document.querySelector('#patientDetail .pf');if(!p||!pf)return;
+    var hd=pf.querySelector('.pf-head');if(!hd)return;
+    if(isPatientInactive(p)){
+      var bn=el('div','pf-inactive'),tx=el('b',null,'Paciente inativo: n\u00e3o aparece na lista de ativos nem para novos agendamentos feitos pela equipe. Se voltar a agendar pelo site, volta a ficar ativo.'),re=el('button','btn small',"Reativar paciente");
+      re.type='button';re.id='ptReactivateBtn';bn.appendChild(tx);bn.appendChild(re);pf.insertBefore(bn,hd);
+    }else{
+      var ib=el('button','btn small secondary','Inativar paciente');ib.type='button';ib.id='ptInactivateBtn';hd.appendChild(ib);
+    }
+  }
+  document.getElementById('patientDetail').addEventListener('click',function(e){
+    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;});if(!p)return;
+    if(e.target.closest('#ptInactivateBtn')){
+      if(!confirm('Marcar "'+p.name+'" como inativo?\n\nEle sai da lista de pacientes ativos, mas a ficha, o hist\u00f3rico e os anexos continuam guardados. Voc\u00ea pode reativar quando quiser.'))return;
+      setPatientInactive(p,true);renderPatientList();renderPatientDetail();
+    }else if(e.target.closest('#ptReactivateBtn')){
+      setPatientInactive(p,false);renderPatientList();renderPatientDetail();
+    }
+  });
+  /* ---------- profissionais: filtro, inativar, reativar e backup ---------- */
+  var list=document.getElementById('clinicsConfig'),pane=list.closest('.cfg-pane'),addBtn=document.getElementById('addClinicBtn'),subRow=document.querySelector('#settingsForm .settings-submit-row');
+  var bar=el('div','pro-filter'),fa=el('button','on','Ativos'),fi=el('button',null,'Inativos'),inact=el('div'),pf='ativos';
+  fa.type=fi.type='button';fa.dataset.f='ativos';fi.dataset.f='inativos';bar.id='proFilter';inact.id='clinicsInactive';bar.appendChild(fa);bar.appendChild(fi);
+  pane.insertBefore(bar,pane.firstChild);list.parentNode.insertBefore(inact,list.nextSibling);
+  function paint(){
+    fa.textContent='Ativos ('+activeClinics().length+')';fi.textContent='Inativos ('+inactiveClinics().length+')';
+    fa.classList.toggle('on',pf==='ativos');fi.classList.toggle('on',pf==='inativos');
+    list.style.display=pf==='ativos'?'':'none';if(addBtn)addBtn.style.display=pf==='ativos'?'':'none';
+    inact.style.display=pf==='inativos'?'':'none';if(pf==='inativos')renderInactive();
+    syncSave();
+  }
+  function syncSave(){if(subRow)subRow.style.display=(pf==='inativos'&&!pane.hidden)?'none':'';}
+  document.querySelector('.cfg-tabs').addEventListener('click',function(){setTimeout(syncSave,0);});
+  bar.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;pf=b.dataset.f;paint();});
+  function fld(l,v){var d=el('div'),s=el('small',null,l),b=el('b',null,v||'\u2014');d.appendChild(s);d.appendChild(b);return d;}
+  function renderInactive(){
+    inact.innerHTML='';var cs=inactiveClinics();
+    if(!cs.length){inact.appendChild(el('p','empty-note','Nenhum profissional inativo.'));return;}
+    inact.appendChild(el('div','hint','Profissionais inativos n\u00e3o entram no sistema e n\u00e3o aparecem para os pacientes. Todos os dados (agenda, pacientes, anexos e financeiro) continuam guardados.'));
+    cs.forEach(function(c){
+      var card=el('div','inactive-card'),np=DATA.patients.filter(function(p){return p.clinicId===c.id;}).length,na=DATA.appointments.filter(function(x){return x.clinicId===c.id;}).length;
+      card.dataset.clinic=c.id;card.appendChild(el('h3',null,c.name));card.appendChild(el('div','ic-sub','Inativo \u00b7 login e senha n\u00e3o funcionam at\u00e9 reativar'));
+      var g=el('div','ic-grid');
+      g.appendChild(fld('Especialidade',(Array.isArray(c.specialtyTags)&&c.specialtyTags.length?c.specialtyTags.join(', '):c.specialty)));
+      g.appendChild(fld('Procedimentos',(c.procedures||[]).join(', ')));
+      g.appendChild(fld('Hor\u00e1rio',(c.start||'')+' \u2013 '+(c.end||'')));
+      g.appendChild(fld('Login',c.login));g.appendChild(fld('Pacientes',String(np)));g.appendChild(fld('Agendamentos',String(na)));
+      card.appendChild(g);
+      var act=el('div','ic-act'),b1=el('button','btn secondary small','Baixar backup dos dados (.json)'),b2=el('button','btn secondary small','Baixar anexos (.zip)'),b3=el('button','btn small','Reativar profissional'),st=el('div','ic-st');
+      b1.type=b2.type=b3.type='button';b1.dataset.backup=c.id;b2.dataset.zip=c.id;b3.dataset.reactivate=c.id;st.dataset.st=c.id;
+      act.appendChild(b1);act.appendChild(b2);act.appendChild(b3);card.appendChild(act);card.appendChild(st);inact.appendChild(card);});
+  }
+  function pending(){ /* aplica o que ja foi digitado nos cartoes, para nao perder ao redesenhar */
+    document.querySelectorAll('#clinicsConfig [data-clinic-id]').forEach(function(e){
+      var c=DATA.clinics.find(function(x){return x.id===e.dataset.clinicId;});if(!c)return;var k=e.dataset.clinicField;
+      if(k==='name')c.name=e.value.trim()||c.name;
+      else if(k==='procedures'||k==='specialtyTags'){try{var arr=JSON.parse(e.value||'[]');if(Array.isArray(arr))c[k]=arr;}catch(x){}}
+      else c[k]=e.value||c[k];});
+  }
+  function after(){
+    saveData();publishClinicNamesToWindow();renderClinicsConfig();renderAdminClinicTabs();renderAgenda();renderAvailabilityPanel();renderPatientList();renderPatientDetail();paint();
+  }
+  document.getElementById('panel-settings').addEventListener('click',function(e){
+    var ib=e.target.closest('[data-inactivate-clinic]'),rb=e.target.closest('[data-reactivate]'),bb=e.target.closest('[data-backup]'),zb=e.target.closest('[data-zip]');
+    if(ib){
+      var c=DATA.clinics.find(function(x){return x.id===ib.dataset.inactivateClinic;});if(!c)return;
+      if(activeClinics().length<=1){alert('\u00c9 preciso manter pelo menos um profissional ativo.');return;}
+      if(!confirm('Inativar "'+c.name+'"?\n\nO login e a senha dele deixam de funcionar at\u00e9 voc\u00ea reativar. Ele sai da agenda, da disponibilidade e da tela do paciente. Agenda, pacientes, anexos e financeiro continuam guardados.'))return;
+      pending();c.active=false;if(adminClinicId===c.id)adminClinicId=firstActiveClinicId();after();
+    }else if(rb){
+      var c2=DATA.clinics.find(function(x){return x.id===rb.dataset.reactivate;});if(!c2)return;
+      c2.active=true;after();
+    }else if(bb){
+      var c3=DATA.clinics.find(function(x){return x.id===bb.dataset.backup;});if(c3)dl(new Blob([JSON.stringify(buildBackup(c3),null,2)],{type:'application/json'}),'backup-profissional_'+slug(c3.name)+'_'+fmtDate(new Date())+'.json');
+    }else if(zb){
+      var c4=DATA.clinics.find(function(x){return x.id===zb.dataset.zip;});if(c4)zipAttachments(c4,inact.querySelector('[data-st="'+c4.id+'"]'));
+    }
+  });
+  var oR=window.renderClinicsConfig;
+  window.renderClinicsConfig=function(){var r=oR.apply(this,arguments);try{paint();}catch(e){console.error(e);}return r;};
+  function buildBackup(c){
+    var pats=DATA.patients.filter(function(p){return p.clinicId===c.id;}).map(function(p){var o=Object.assign({},p);delete o.password;return o;});
+    var cc=Object.assign({},c);delete cc.password;delete cc.receptionPassword;
+    var fin=null;try{if(window.FinanceiroAPI&&window.FinanceiroAPI.getClinicFinanceBackup)fin=window.FinanceiroAPI.getClinicFinanceBackup(c.id);}catch(e){}
+    return {tipo:'backup-profissional',versao:1,geradoEm:new Date().toISOString(),
+      aviso:'Senhas n\u00e3o s\u00e3o inclu\u00eddas. Os anexos (imagens e arquivos) ficam no armazenamento de arquivos: use "Baixar anexos (.zip)".',
+      profissional:cc,pacientes:pats,agendamentos:DATA.appointments.filter(function(x){return x.clinicId===c.id;}),
+      diasDeAtendimento:DATA.availability.filter(function(x){return x.clinicId===c.id;}),financeiro:fin};
+  }
+  /* ---------- ZIP (sem biblioteca): guarda os arquivos sem compactar ---------- */
+  var CRC=null;
+  function crc32(u8){
+    if(!CRC){CRC=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);CRC[n]=c>>>0;}}
+    var crc=0xFFFFFFFF;for(var i=0;i<u8.length;i++)crc=CRC[(crc^u8[i])&255]^(crc>>>8);return (crc^0xFFFFFFFF)>>>0;
+  }
+  function makeZip(files){
+    var enc=new TextEncoder(),parts=[],central=[],off=0;
+    files.forEach(function(f){
+      var nm=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length,lh=new DataView(new ArrayBuffer(30)),ch=new DataView(new ArrayBuffer(46));
+      lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);lh.setUint16(10,0,true);lh.setUint16(12,0x21,true);
+      lh.setUint32(14,crc,true);lh.setUint32(18,sz,true);lh.setUint32(22,sz,true);lh.setUint16(26,nm.length,true);lh.setUint16(28,0,true);
+      parts.push(lh.buffer,nm,f.data);
+      ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,0,true);ch.setUint16(14,0x21,true);
+      ch.setUint32(16,crc,true);ch.setUint32(20,sz,true);ch.setUint32(24,sz,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+      central.push(ch.buffer,nm);off+=30+nm.length+sz;});
+    var cd=0;central.forEach(function(b){cd+=(b.byteLength!=null?b.byteLength:b.length);});
+    var end=new DataView(new ArrayBuffer(22));end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);end.setUint32(12,cd,true);end.setUint32(16,off,true);
+    return new Blob(parts.concat(central,[end.buffer]),{type:'application/zip'});
+  }
+  async function zipAttachments(c,st){
+    function say(t){if(st)st.textContent=t;}
+    if(!sbClient){say('Os anexos ficam no armazenamento de arquivos (Worker) e s\u00f3 podem ser baixados com o sistema conectado.');return;}
+    var ids=DATA.patients.filter(function(p){return p.clinicId===c.id;}).map(function(p){return p.id;});
+    if(!ids.length){say('Este profissional n\u00e3o tem pacientes, ent\u00e3o n\u00e3o h\u00e1 anexos.');return;}
+    say('Procurando anexos...');
+    try{
+      var atts=[];
+      for(var i=0;i<ids.length;i+=50){
+        var q=await sbClient.from('patient_attachments').select('*').in('patient_id',ids.slice(i,i+50));
+        if(q.error)throw new Error(q.error.message||'erro ao listar anexos');
+        (q.data||[]).forEach(function(r){atts.push(Object.assign(rowToAttachment(r),{patientId:r.patient_id}));});
+      }
+      if(!atts.length){say('Nenhum anexo encontrado para este profissional.');return;}
+      var byPat={};DATA.patients.forEach(function(p){byPat[p.id]=p.name;});
+      var used={},files=[],errs=[],enc=new TextEncoder();
+      for(var k=0;k<atts.length;k++){
+        var a2=atts[k];say('Baixando '+(k+1)+' de '+atts.length+'...');
+        try{
+          var s=await callWorker('/sign-download?key='+encodeURIComponent(a2.r2Key),{method:'GET'});
+          var res=await fetch(s.url);if(!res.ok)throw new Error('HTTP '+res.status);
+          var data=new Uint8Array(await res.arrayBuffer());
+          var base=slug(a2.fileName),folder=slug(byPat[a2.patientId]||'paciente'),name=folder+'/'+base,n=1;
+          while(used[name]){n++;name=folder+'/'+n+'_'+base;}used[name]=1;files.push({name:name,data:data});
+        }catch(e){errs.push(a2.fileName+': '+(e.message||e));}
+      }
+      if(errs.length)files.push({name:'_LEIA-ME_arquivos_com_erro.txt',data:enc.encode('Estes arquivos n\u00e3o puderam ser baixados:\n'+errs.join('\n')+'\n')});
+      if(!files.length||(files.length===1&&errs.length)){say('N\u00e3o foi poss\u00edvel baixar os anexos. '+errs.length+' erro(s).');return;}
+      dl(makeZip(files),'anexos_'+slug(c.name)+'_'+fmtDate(new Date())+'.zip');
+      say('Pronto: '+(files.length-(errs.length?1:0))+' arquivo(s) baixado(s)'+(errs.length?', '+errs.length+' com erro (veja o _LEIA-ME no zip).':'.'));
+    }catch(e){say('Falha ao baixar os anexos: '+(e.message||e));}
+  }
+  window.__v53={makeZip:makeZip,crc32:crc32,buildBackup:buildBackup};
+  counts();paint();
 })();
 </script>
 </body>
