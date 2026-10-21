@@ -1671,6 +1671,19 @@ body.pub-booking #publicBanner{display:none}
 .pf-inactive b{flex:1;min-width:180px}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
+<style id="reschedStyles">
+/* v54 - Reagendamento */
+.resched-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:var(--sand-dim);border:1px solid var(--line);border-left:4px solid var(--teal-mid);border-radius:var(--radius);padding:12px 14px;margin:0 0 16px;font-size:.88rem;line-height:1.45;color:var(--ink);}
+.resched-banner[hidden]{display:none;}
+.resched-banner .rb-sub{display:block;margin-top:4px;font-size:.78rem;color:var(--ink-soft);}
+.resched-banner .btn{flex:none;}
+.resched-note{margin-top:8px;font-size:.78rem;color:var(--ink-soft);line-height:1.4;}
+.resched-note.info{color:var(--teal-deep);}
+.resched-history{margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sand);font-size:.8rem;line-height:1.5;color:var(--ink-soft);}
+.resched-history strong{display:block;color:var(--ink);margin-bottom:4px;font-size:.82rem;}
+#reschedHint.warn{color:#8a5a12;}
+.btn.small.secondary[disabled]{opacity:.55;cursor:not-allowed;}
+</style>
 </head>
 <body>
 <div class="app">
@@ -1849,6 +1862,23 @@ body.pub-booking #publicBanner{display:none}
           <span>Permitir atendimento em duas clínicas diferentes no mesmo dia</span>
         </label>
       </div>
+      <div class="field" style="margin-top:16px;">
+        <label class="toggle-field">
+          <input type="checkbox" id="cfgReschedEnabled">
+          <span>Permitir que o paciente reagende a consulta pelo site</span>
+        </label>
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <div class="field">
+          <label>Reagendar até quantas horas antes?</label>
+          <input type="number" id="cfgReschedMinHours" min="0" max="720" step="1" inputmode="numeric" placeholder="6">
+        </div>
+        <div class="field">
+          <label>Máximo de reagendamentos por consulta</label>
+          <input type="number" id="cfgReschedMaxCount" min="0" max="20" step="1" inputmode="numeric" placeholder="2">
+        </div>
+      </div>
+      <div class="hint">O paciente só consegue reagendar até esse número de horas antes da consulta e até o máximo de vezes informado (0 = sem limite de vezes). Depois do prazo, ele é orientado a procurar a recepção, sem nenhuma consequência. Recepção, administrador e profissional reagendam sem limite. O novo horário escolhido pelo paciente também precisa ter essa mesma antecedência.</div>
       <div class="field field-narrow" style="margin-top:16px;">
         <label>PIN de acesso administrativo</label>
         <input type="text" id="cfgAccessPin" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="5 números">
@@ -2361,6 +2391,10 @@ body.pub-booking #publicBanner{display:none}
         </button>
       </div>
       <div class="bk-body">
+        <div class="resched-banner" id="rescheduleBanner" hidden>
+          <div id="rescheduleBannerText"></div>
+          <button type="button" class="btn small secondary" id="rescheduleCancelBtn">Desistir</button>
+        </div>
         <div class="bk-section-head">
           <span class="section-label">Escolha o dia</span>
           <span class="bk-month"><button type="button" id="bkPrevDays" aria-label="Dias anteriores">&lsaquo;</button><span id="bkMonth"></span><button type="button" id="bkNextDays" aria-label="Próximos dias">&rsaquo;</button></span>
@@ -2447,6 +2481,7 @@ body.pub-booking #publicBanner{display:none}
           <select id="apptHour"></select>
         </div>
       </div>
+      <div class="resched-history" id="apptReschedHistory" style="display:none;"></div>
       <div class="field" id="apptStatusField">
         <label>Status</label>
         <div class="status-choices" id="apptStatusChoices">
@@ -2468,8 +2503,34 @@ body.pub-booking #publicBanner{display:none}
       </div>
       <div class="modal-actions">
         <button type="submit" class="btn">Salvar</button>
+        <button type="button" class="btn secondary" id="apptRescheduleBtn" style="display:none;">Reagendar</button>
         <button type="button" class="btn secondary" id="apptCancelBtn">Cancelar</button>
         <button type="button" class="btn danger" id="apptDeleteBtn" style="display:none;margin-left:auto;">Excluir</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- REAGENDAR CONSULTA (recepção / administrador / profissional) -->
+<div class="overlay" id="reschedOverlay">
+  <div class="modal">
+    <h3>Reagendar consulta</h3>
+    <div class="sub" id="reschedSub"></div>
+    <form id="reschedForm">
+      <div class="field-row">
+        <div class="field">
+          <label>Nova data</label>
+          <input type="date" id="reschedDate" required>
+        </div>
+        <div class="field">
+          <label>Novo horário</label>
+          <select id="reschedHour"></select>
+        </div>
+      </div>
+      <div class="hint" id="reschedHint"></div>
+      <div class="modal-actions">
+        <button type="submit" class="btn">Confirmar reagendamento</button>
+        <button type="button" class="btn secondary" id="reschedCancelBtn">Voltar</button>
       </div>
     </form>
   </div>
@@ -3042,6 +3103,322 @@ function notifyCancellation(appt, cancelledBy, previousStatus){
   });
 }
 
+/* ============================================================
+   REAGENDAMENTO (v54)
+   - Paciente: reagenda sozinho até X horas antes da consulta (valor definido pelo
+     Administrador em Configurações) e no máximo N vezes por consulta. Perdeu o prazo:
+     só aparece o aviso para procurar a recepção — sem nenhuma consequência.
+   - Recepção / Administrador / Profissional: sem limite de prazo.
+   - Reagendar MOVE a mesma consulta (status e sinal pago continuam como estavam, sem
+     novo Pix) e guarda o histórico (quem, quando, de qual horário) em reschedule_history.
+   - Para o paciente a regra é conferida DE NOVO no servidor (patient_reschedule_appointment).
+   ============================================================ */
+const RESCHEDULE_DEFAULT_MIN_HOURS = 6;
+const RESCHEDULE_DEFAULT_MAX_COUNT = 2;
+const RESCHEDULE_SEE_RECEPTION = 'Procure a recepção da clínica.';
+let reschedRemoteReady = false;   // true quando as colunas reschedule_* já existem em agenda_settings
+let reschedulingApptId = null;    // paciente: consulta que está sendo reagendada agora
+function getRescheduleRules(){
+  const s = DATA.settings || {};
+  const num = v => (v === undefined || v === null || v === '') ? NaN : Number(v);
+  const mh = num(s.rescheduleMinHours), mc = num(s.rescheduleMaxCount);
+  return {
+    enabled: s.rescheduleEnabled !== false,
+    minHours: (Number.isFinite(mh) && mh >= 0) ? mh : RESCHEDULE_DEFAULT_MIN_HOURS,
+    maxCount: (Number.isFinite(mc) && mc >= 0) ? Math.floor(mc) : RESCHEDULE_DEFAULT_MAX_COUNT   // 0 = sem limite
+  };
+}
+function fmtRuleHours(h){
+  h = Number(h) || 0;
+  if(h > 0 && h % 24 === 0){ const d = h / 24; return d + (d === 1 ? ' dia' : ' dias'); }
+  return h + (h === 1 ? ' hora' : ' horas');
+}
+function apptStartMs(a){
+  const d = String((a && a.date) || '').split('-').map(Number), t = String((a && a.hour) || '').split(':').map(Number);
+  return new Date(d[0], (d[1] || 1) - 1, d[2] || 1, t[0] || 0, t[1] || 0, 0, 0).getTime();
+}
+function rescheduleCount(a){ return (a && Array.isArray(a.rescheduleHistory)) ? a.rescheduleHistory.length : 0; }
+function roleActorLabel(){
+  return currentRole === 'admin' ? 'administrador' : currentRole === 'receptionist' ? 'recepcao' : currentRole === 'professional' ? 'profissional' : 'paciente';
+}
+function rescheduleByLabel(by){
+  return {paciente:'pelo paciente', recepcao:'pela recepção', administrador:'pelo administrador', profissional:'pelo profissional'}[by] || '';
+}
+// actor: 'paciente' (com limites) | 'equipe' (recepção, administrador e profissional: sem limite de prazo)
+function rescheduleCheck(a, actor){
+  if(!a || a.status === 'bloqueado') return {ok:false, code:'status', msg:'Este horário não pode ser reagendado.'};
+  const patientOk = (a.status === 'agendado' || a.status === 'confirmado');
+  if(actor === 'equipe'){
+    return (patientOk || a.status === 'aguardando_pagamento') ? {ok:true}
+      : {ok:false, code:'status', msg:'Só consultas agendadas ou confirmadas podem ser reagendadas.'};
+  }
+  if(!patientOk){
+    return {ok:false, code:'status', msg: a.status === 'aguardando_pagamento'
+      ? 'Conclua o pagamento do sinal (ou cancele) antes de reagendar.'
+      : 'Só consultas confirmadas podem ser reagendadas.'};
+  }
+  const start = apptStartMs(a);
+  if(start <= Date.now()) return {ok:false, code:'passado', msg:'Essa consulta já passou.'};
+  const rules = getRescheduleRules();
+  if(!rules.enabled || (window.__reschedRulesMissing && isPatientSupabaseMode())){
+    return {ok:false, code:'desativado', msg:'O reagendamento online não está disponível no momento. ' + RESCHEDULE_SEE_RECEPTION};
+  }
+  if((start - Date.now()) / 3600000 < rules.minHours){
+    return {ok:false, code:'janela', msg:'O prazo para reagendar online terminou (até ' + fmtRuleHours(rules.minHours) + ' antes da consulta). ' + RESCHEDULE_SEE_RECEPTION};
+  }
+  const n = rescheduleCount(a);
+  if(rules.maxCount > 0 && n >= rules.maxCount){
+    return {ok:false, code:'limite', msg:'Esta consulta já foi reagendada ' + n + (n === 1 ? ' vez' : ' vezes') + ', que é o limite do reagendamento online. ' + RESCHEDULE_SEE_RECEPTION};
+  }
+  return {ok:true};
+}
+// Registra um reagendamento JÁ aplicado em a (a.date/a.hour já são os novos): histórico + e-mail.
+// opts.push === false: o histórico já veio pronto do servidor (reagendamento do paciente no banco).
+function recordReschedule(a, from, by, opts){
+  opts = opts || {};
+  if(opts.push !== false){
+    if(!Array.isArray(a.rescheduleHistory)) a.rescheduleHistory = [];
+    a.rescheduleHistory.push({
+      from: {date: from.date, hour: from.hour}, to: {date: a.date, hour: a.hour},
+      by, at: new Date().toISOString(), seen: false
+    });
+  }
+  const pat = DATA.patients.find(p=>p.id===a.patientId);
+  const clinic = getClinic(a.clinicId);
+  sendSystemEmail('appointment_rescheduled', {
+    patientName: pat ? pat.name : '',
+    professionalName: clinic ? clinic.name : '',
+    professionalSpecialty: clinic ? (clinic.specialty || '') : '',
+    oldDate: isoToDisplay(from.date), oldHour: from.hour,
+    date: isoToDisplay(a.date), hour: a.hour,
+    rescheduledBy: by,
+    rescheduleCount: rescheduleCount(a),
+    signalPaid: !!a.sinalPago,
+    status: a.status
+  });
+}
+function reschedHistoryLines(a){
+  return (Array.isArray(a.rescheduleHistory) ? a.rescheduleHistory : []).map(h=>{
+    let when = '';
+    try{ const d = new Date(h.at); if(!isNaN(d)) when = ' · em ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }catch(e){}
+    return isoToDisplay(h.from.date) + ' ' + h.from.hour + ' → ' + isoToDisplay(h.to.date) + ' ' + h.to.hour + ' · ' + (rescheduleByLabel(h.by) || 'pela equipe') + when;
+  });
+}
+// Regras de reagendamento para a tela do paciente (a tabela de configurações não é pública).
+async function loadRescheduleRules(){
+  if(!isPatientSupabaseMode()) return;
+  try{
+    const { data, error } = await sbClient.rpc('get_reschedule_rules');
+    if(error || !data){
+      window.__reschedRulesMissing = true;
+      console.warn('Regras de reagendamento indisponíveis — rode supabase/reagendamento.sql no Supabase.', error && error.message);
+      return;
+    }
+    window.__reschedRulesMissing = false;
+    DATA.settings.rescheduleEnabled = data.enabled !== false;
+    DATA.settings.rescheduleMinHours = Number(data.min_hours);
+    DATA.settings.rescheduleMaxCount = Number(data.max_count);
+  }catch(e){ window.__reschedRulesMissing = true; console.warn('Falha ao buscar regras de reagendamento', e); }
+}
+
+/* ---------- Reagendar: EQUIPE (recepção, administrador, profissional) ---------- */
+let reschedAppt = null;
+function updateApptReschedUi(a){
+  const btn = document.getElementById('apptRescheduleBtn'), box = document.getElementById('apptReschedHistory');
+  if(!btn || !box) return;
+  btn.style.display = (a && rescheduleCheck(a, 'equipe').ok) ? '' : 'none';
+  const lines = a ? reschedHistoryLines(a) : [];
+  if(!lines.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = '<strong>Reagendamentos desta consulta (' + lines.length + ')</strong>' + lines.map(l=>'<div>' + escapeHtml(l) + '</div>').join('');
+}
+function reschedFreeHours(a, iso){
+  const hours = hourRangeForDate(iso, a.clinicId);
+  return hours.filter(h=>!DATA.appointments.find(x=>holdsSlot(x) && x.clinicId===a.clinicId && x.date===iso && x.hour===h && x.id!==a.id)
+    && !(iso === a.date && h === a.hour));
+}
+function fillReschedHours(){
+  const a = reschedAppt, iso = document.getElementById('reschedDate').value, sel = document.getElementById('reschedHour'), msg = document.getElementById('reschedHint');
+  if(!a || !iso){ sel.innerHTML = ''; return; }
+  const free = reschedFreeHours(a, iso);
+  sel.innerHTML = free.length ? free.map(h=>'<option value="' + h + '">' + h + '</option>').join('') : '<option value="">Sem horários livres</option>';
+  const noAvail = !isAvailableDay(iso, a.clinicId);
+  msg.textContent = noAvail
+    ? 'Atenção: este dia não está liberado na Disponibilidade deste profissional.' + (currentRole === 'receptionist' ? ' A recepção só pode marcar em dias liberados.' : '')
+    : 'Sem limite de prazo para a equipe. O status e o sinal já pago da consulta continuam como estão.';
+  msg.classList.toggle('warn', noAvail);
+}
+function openReschedModal(){
+  const a = editingApptId ? DATA.appointments.find(x=>x.id===editingApptId) : null;
+  if(!a) return;
+  const chk = rescheduleCheck(a, 'equipe');
+  if(!chk.ok){ alert(chk.msg); return; }
+  reschedAppt = a;
+  const pat = DATA.patients.find(p=>p.id===a.patientId);
+  document.getElementById('reschedSub').textContent = (pat ? pat.name + ' — ' : '') + 'de ' + isoToDisplay(a.date) + ' às ' + a.hour;
+  const dateEl = document.getElementById('reschedDate');
+  dateEl.min = fmtDate(new Date());
+  dateEl.value = a.date >= fmtDate(new Date()) ? a.date : fmtDate(new Date());
+  fillReschedHours();
+  document.getElementById('reschedOverlay').classList.add('active');
+}
+document.getElementById('apptRescheduleBtn').addEventListener('click', openReschedModal);
+document.getElementById('reschedDate').addEventListener('change', fillReschedHours);
+document.getElementById('reschedCancelBtn').addEventListener('click', ()=>{ document.getElementById('reschedOverlay').classList.remove('active'); reschedAppt = null; });
+document.getElementById('reschedForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const a = reschedAppt;
+  if(!a) return;
+  const date = document.getElementById('reschedDate').value, hour = document.getElementById('reschedHour').value;
+  if(!date || !hour){ alert('Escolha a nova data e um horário livre.'); return; }
+  if(date < fmtDate(new Date())){ alert('Escolha uma data a partir de hoje.'); return; }
+  if(currentRole === 'receptionist' && !isAvailableDay(date, a.clinicId)){
+    alert('Essa data não está disponível para atendimento. A recepção só pode marcar em dias que o profissional já liberou na aba "Disponibilidade".');
+    return;
+  }
+  if(date === a.date && hour === a.hour){ alert('Esse já é o horário atual da consulta. Escolha outro.'); return; }
+  if(DATA.appointments.find(x=>holdsSlot(x) && x.clinicId===a.clinicId && x.date===date && x.hour===hour && x.id!==a.id)){
+    alert('Já existe um agendamento neste horário.'); fillReschedHours(); return;
+  }
+  const from = {date: a.date, hour: a.hour};
+  a.date = date; a.hour = hour;
+  recordReschedule(a, from, roleActorLabel());
+  syncAppointmentToSupabase(a);
+  saveData();
+  document.getElementById('reschedOverlay').classList.remove('active');
+  document.getElementById('apptOverlay').classList.remove('active');
+  reschedAppt = null;
+  currentWeekStart = mondayOf(parseIso(date));
+  renderAgenda(); renderPatientDetail(); renderAlerts();
+  alert('Consulta reagendada para ' + isoToDisplay(date) + ' às ' + hour + '.');
+});
+
+/* ---------- Reagendar: PACIENTE ---------- */
+function getReschedulingAppt(){ return reschedulingApptId ? (DATA.appointments.find(x=>x.id===reschedulingApptId) || null) : null; }
+function refreshRescheduleUi(){
+  const banner = document.getElementById('rescheduleBanner');
+  if(!banner) return;
+  let a = getReschedulingAppt();
+  if(a && (a.clinicId !== selectedPublicClinicId || !rescheduleCheck(a, 'paciente').ok)){ a = null; reschedulingApptId = null; selectedPublicSlot = null; }
+  banner.hidden = !a;
+  const btn = document.getElementById('bkConfirmBtn');
+  if(btn) btn.textContent = a ? 'Reagendar' : 'Confirmar';
+  if(a){
+    const rules = getRescheduleRules();
+    document.getElementById('rescheduleBannerText').innerHTML =
+      '<strong>Reagendando a consulta de ' + escapeHtml(isoToDisplay(a.date)) + ' às ' + escapeHtml(a.hour) + '.</strong> Escolha o novo dia e horário abaixo.'
+      + '<span class="rb-sub">O novo horário precisa ter pelo menos ' + escapeHtml(fmtRuleHours(rules.minHours)) + ' de antecedência. Seu sinal já pago continua valendo.</span>';
+  }
+  updateConfirmBar();
+}
+function startPatientReschedule(apptId){
+  const a = DATA.appointments.find(x=>x.id===apptId);
+  if(!a) return;
+  const chk = rescheduleCheck(a, 'paciente');
+  if(!chk.ok){ alert(chk.msg); renderMyAppts(); return; }
+  reschedulingApptId = apptId;
+  selectedPublicSlot = null;
+  renderBookingScreen();
+  const b = document.getElementById('rescheduleBanner');
+  if(b && b.scrollIntoView) b.scrollIntoView({behavior:'smooth', block:'start'});
+}
+document.getElementById('rescheduleCancelBtn').addEventListener('click', ()=>{
+  reschedulingApptId = null; selectedPublicSlot = null; renderBookingScreen();
+});
+function slotLeadOkForReschedule(iso, hour){
+  if(!reschedulingApptId) return true;
+  return (apptStartMs({date: iso, hour}) - Date.now()) / 3600000 >= getRescheduleRules().minHours;
+}
+const RESCHEDULE_SERVER_MSG = {
+  janela_encerrada: () => 'O prazo para reagendar online terminou (até ' + fmtRuleHours(getRescheduleRules().minHours) + ' antes da consulta). ' + RESCHEDULE_SEE_RECEPTION,
+  limite_reagendamentos: () => 'Esta consulta já atingiu o limite de reagendamentos online. ' + RESCHEDULE_SEE_RECEPTION,
+  desativado: () => 'O reagendamento online não está disponível no momento. ' + RESCHEDULE_SEE_RECEPTION,
+  passado: () => 'Essa consulta já passou.',
+  status_invalido: () => 'Só consultas confirmadas podem ser reagendadas.',
+  nao_encontrado: () => 'Não encontramos essa consulta. ' + RESCHEDULE_SEE_RECEPTION,
+  sessao_invalida: () => 'Sua sessão expirou. Saia, entre de novo e tente outra vez.',
+  horario_ocupado: () => 'Esse horário acabou de ser ocupado. Escolha outro, por favor.',
+  antecedencia_novo: () => 'Escolha um horário com pelo menos ' + fmtRuleHours(getRescheduleRules().minHours) + ' de antecedência.',
+  dia_sem_atendimento: () => 'Não há atendimento nesse dia. Escolha outra data.',
+  horario_invalido: () => 'Esse horário não está disponível. Escolha outro, por favor.',
+  mesmo_horario: () => 'Esse já é o horário da sua consulta. Escolha um horário diferente.'
+};
+const RESCHEDULE_TERMINAL = ['janela_encerrada','limite_reagendamentos','desativado','passado','status_invalido','nao_encontrado','sessao_invalida'];
+async function confirmPatientReschedule(){
+  const a = getReschedulingAppt();
+  if(!a || !selectedPublicSlot) return;
+  const chk = rescheduleCheck(a, 'paciente');
+  if(!chk.ok){ alert(chk.msg); reschedulingApptId = null; selectedPublicSlot = null; renderBookingScreen(); return; }
+  const date = selectedPublicSlot.date, hour = selectedPublicSlot.hour;
+  if(date === a.date && hour === a.hour){ alert('Esse já é o horário da sua consulta. Escolha um horário diferente.'); return; }
+  if(!slotLeadOkForReschedule(date, hour)){ alert(RESCHEDULE_SERVER_MSG.antecedencia_novo()); return; }
+  if(DATA.appointments.find(x=>holdsSlot(x) && x.clinicId===a.clinicId && x.date===date && x.hour===hour && x.id!==a.id)){
+    alert(RESCHEDULE_SERVER_MSG.horario_ocupado()); selectedPublicSlot = null; renderBookingScreen(); return;
+  }
+  if(!confirm('Reagendar sua consulta de ' + isoToDisplay(a.date) + ' às ' + a.hour + ' para ' + isoToDisplay(date) + ' às ' + hour + '?')) return;
+  const btn = document.getElementById('bkConfirmBtn');
+  btn.disabled = true;
+  const from = {date: a.date, hour: a.hour};
+  try{
+    if(isPatientSupabaseMode()){
+      let resp;
+      try{
+        resp = await sbClient.rpc('patient_reschedule_appointment', {
+          p_public_patient_id: loggedPublicPatientId, p_appointment_id: a.id, p_new_date: date, p_new_hour: hour
+        });
+      }catch(e){ resp = { error: e }; }
+      const { data, error } = resp;
+      if(error || !data){
+        console.error('Falha ao reagendar no banco (o SQL supabase/reagendamento.sql foi rodado?)', error);
+        alert('Não foi possível reagendar agora. Tente novamente em instantes ou ' + RESCHEDULE_SEE_RECEPTION.charAt(0).toLowerCase() + RESCHEDULE_SEE_RECEPTION.slice(1));
+        await loadMyPublicDataFromSupabase(); renderBookingScreen(); return;
+      }
+      if(!data.ok){
+        const fn = RESCHEDULE_SERVER_MSG[data.error];
+        alert(fn ? fn() : 'Não foi possível reagendar essa consulta. ' + RESCHEDULE_SEE_RECEPTION);
+        if(RESCHEDULE_TERMINAL.includes(data.error)){ reschedulingApptId = null; }
+        selectedPublicSlot = null;
+        await loadMyPublicDataFromSupabase(); renderBookingScreen(); return;
+      }
+      a.date = data.date; a.hour = data.hour;
+      a.rescheduleHistory = Array.isArray(data.history) ? data.history : (a.rescheduleHistory || []);
+      recordReschedule(a, from, 'paciente', {push: false});
+    } else {
+      a.date = date; a.hour = hour;
+      recordReschedule(a, from, 'paciente');
+      syncAppointmentToSupabase(a);
+    }
+    saveData();
+    reschedulingApptId = null; selectedPublicSlot = null;
+    selectedPublicDate = parseIso(date); bkViewStart = new Date(selectedPublicDate);
+    renderBookingScreen();
+    alert('Consulta reagendada para ' + isoToDisplay(date) + ' às ' + hour + '. Até breve!');
+  } finally { btn.disabled = false; }
+}
+// Alertas (sininho): reagendamentos feitos por OUTRA pessoa que não quem está olhando.
+function computeRescheduleAlerts(clinicFilterId){
+  const me = roleActorLabel(), todayIso = fmtDate(new Date()), out = [];
+  (DATA.appointments || []).forEach(a=>{
+    if(a.status === 'cancelado' || a.status === 'bloqueado') return;
+    if(clinicFilterId && a.clinicId !== clinicFilterId) return;
+    if(a.date < todayIso) return;
+    const h = a.rescheduleHistory;
+    if(!Array.isArray(h) || !h.length) return;
+    const last = h[h.length - 1];
+    if(!last || last.seen || last.by === me || !last.from || !last.to) return;
+    const p = DATA.patients.find(pt=>pt.id===a.patientId), clinic = getClinic(a.clinicId);
+    out.push({
+      id: 'resched-' + a.id + '-' + h.length, icon: '🔁',
+      onOpen: ()=>openAppointmentFromAlert(a.id),
+      title: 'Consulta reagendada',
+      desc: (p ? p.name : 'Paciente') + ' — de ' + isoToDisplay(last.from.date) + ' às ' + last.from.hour + ' para ' + isoToDisplay(a.date) + ' às ' + a.hour
+        + (clinic ? ' — ' + clinic.name : '') + ' (reagendada ' + (rescheduleByLabel(last.by) || 'pela equipe') + ').',
+      onDismiss: ()=>{ last.seen = true; syncAppointmentToSupabase(a); saveData(); }
+    });
+  });
+  return out;
+}
+
 function patientToRow(p){
   return {
     id: p.id,
@@ -3210,7 +3587,8 @@ function appointmentToRow(a){
     financeiro_receivable_id: a.financeiroReceivableId || null,
     booked_by_self: !!a.bookedBySelf,
     alert_seen: !!a.alertSeen,
-    ...(a.sinalPago ? { sinal_pago: true } : {})   // coluna criada por adicionar_sinal_pago.sql
+    ...(a.sinalPago ? { sinal_pago: true } : {}),   // coluna criada por adicionar_sinal_pago.sql
+    ...((a.rescheduleHistory && a.rescheduleHistory.length) ? { reschedule_history: a.rescheduleHistory } : {})   // coluna criada por reagendamento.sql
   };
 }
 function rowToAppointment(r){
@@ -3225,7 +3603,8 @@ function rowToAppointment(r){
     procedures: r.conditions || [],
     bookedBySelf: !!r.booked_by_self,
     alertSeen: !!r.alert_seen,
-    sinalPago: !!r.sinal_pago
+    sinalPago: !!r.sinal_pago,
+    rescheduleHistory: Array.isArray(r.reschedule_history) ? r.reschedule_history : []
   };
   if(r.financeiro_receivable_id) a.financeiroReceivableId = r.financeiro_receivable_id;
   return a;
@@ -3251,7 +3630,19 @@ function syncAppointmentToSupabase(appt){
     return;
   }
   sbClient.from('agenda_appointments').upsert(appointmentToRow(appt)).then(({error})=>{
-    if(error) console.error('Falha ao sincronizar agendamento com o Supabase', error);
+    if(!error) return;
+    // Banco ainda sem a coluna reschedule_history (SQL reagendamento.sql não rodado): grava sem ela,
+    // para o horário novo não se perder, e avisa a equipe uma vez.
+    if(/reschedule_history/i.test(error.message || '') && appt.rescheduleHistory && appt.rescheduleHistory.length){
+      const row = appointmentToRow(appt); delete row.reschedule_history;
+      sbClient.from('agenda_appointments').upsert(row).then(({error: e2})=>{ if(e2) console.error('Falha ao sincronizar agendamento com o Supabase', e2); });
+      if(currentRole && !window.__reschedColWarned){
+        window.__reschedColWarned = true;
+        alert('Atenção: o horário novo foi salvo, mas o banco ainda não tem a coluna do histórico de reagendamentos. Rode o arquivo supabase/reagendamento.sql no Supabase.');
+      }
+      return;
+    }
+    console.error('Falha ao sincronizar agendamento com o Supabase', error);
   });
 }
 function syncAppointmentsToSupabase(appts){
@@ -3384,6 +3775,7 @@ async function loadPublicSignalConfig(){
     if(error){ console.error('Falha ao buscar configuração do sinal', error); return; }
     if(window.FinanceiroAPI && window.FinanceiroAPI.applyPublicSignalConfig) window.FinanceiroAPI.applyPublicSignalConfig(data || []);
   }catch(e){ console.error('Falha ao buscar configuração do sinal', e); }
+  await loadRescheduleRules();
 }
 
 // Cria/acha a ficha do paciente NESTE profissional no banco e troca a ficha provisória do aparelho por ela.
@@ -3450,7 +3842,9 @@ function settingsToRow(){
     // Só envia se a coluna já existe no banco (lida no login) e quem salva é o admin:
     // sem isso o upsert falharia em bancos sem a migração, ou a recepção poderia
     // sobrescrever o valor com um {} local.
-    ...((availPermRemoteReady && currentRole === 'admin') ? { avail_permanent: DATA.availPermanent || {} } : {})
+    ...((availPermRemoteReady && currentRole === 'admin') ? { avail_permanent: DATA.availPermanent || {} } : {}),
+    // Regras do reagendamento (colunas criadas por reagendamento.sql): só quando já existem no banco e quem salva é o admin.
+    ...((reschedRemoteReady && currentRole === 'admin') ? (()=>{ const rr = getRescheduleRules(); return { reschedule_enabled: rr.enabled, reschedule_min_hours: rr.minHours, reschedule_max_count: rr.maxCount }; })() : {})
   };
 }
 function rowToSettings(r){
@@ -3459,7 +3853,12 @@ function rowToSettings(r){
     allowMultiClinicSameDay: !!r.allow_multi_clinic_same_day,
     ...(r.access_pin ? { accessPin: r.access_pin } : {}),
     ...(r.professional_login ? { professionalLogin: r.professional_login, professionalPassword: r.professional_password || '1234' } : {}),
-    ...(r.reception_login ? { receptionLogin: r.reception_login, receptionPassword: r.reception_password || '' } : {})
+    ...(r.reception_login ? { receptionLogin: r.reception_login, receptionPassword: r.reception_password || '' } : {}),
+    ...(('reschedule_min_hours' in r) ? {
+      rescheduleEnabled: r.reschedule_enabled !== false,
+      rescheduleMinHours: Number(r.reschedule_min_hours),
+      rescheduleMaxCount: Number(r.reschedule_max_count)
+    } : {})
   };
 }
 // Igual ao financeiro: reconcilia a tabela inteira a cada save (upsert do
@@ -3554,6 +3953,7 @@ async function loadAgendaConfigFromSupabase(){
         else if(Object.keys(localPerm).length) availPermNeedsPush = true; // sobe o que já estava marcado, quando o papel admin estiver ativo
         else DATA.availPermanent = {};
       }
+      if(settingsRes.data && settingsRes.data.length && ('reschedule_min_hours' in settingsRes.data[0])) reschedRemoteReady = true;
       const faltaClinica = !(clinicsRes.data && clinicsRes.data.length);
       const faltaRecepcao = !(settingsRes.data && settingsRes.data.length && settingsRes.data[0].reception_login);
       if(faltaClinica || faltaRecepcao) await syncAgendaConfigToSupabase();
@@ -4011,6 +4411,10 @@ function fillSettingsForm(){
   document.getElementById('cfgSpecialty').value = DATA.settings.specialty || '';
   document.getElementById('cfgAllowSaturday').checked = DATA.settings.allowSaturday !== false;
   document.getElementById('cfgAllowMultiClinic').checked = DATA.settings.allowMultiClinicSameDay === true;
+  { const rr = getRescheduleRules();
+    document.getElementById('cfgReschedEnabled').checked = rr.enabled;
+    document.getElementById('cfgReschedMinHours').value = rr.minHours;
+    document.getElementById('cfgReschedMaxCount').value = rr.maxCount; }
   document.getElementById('cfgAccessPin').value = DATA.settings.accessPin || '13579';
   document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
   const pp = document.getElementById('cfgProfessionalPassword');
@@ -4260,11 +4664,11 @@ function openAppointmentFromAlert(apptId){
 function computeAlerts(){
   if(typeof publicMode !== 'undefined' && publicMode) return [];
   if(!currentRole) return [];
-  if(currentRole === 'receptionist') return computeBookingAlerts(null);
+  if(currentRole === 'receptionist') return [...computeBookingAlerts(null), ...computeRescheduleAlerts(null)];
   if(currentRole === 'professional'){
-    return [...computeAvailabilityAlerts().filter(a=>a.id === 'avail-'+adminClinicId), ...computeBookingAlerts(adminClinicId)];
+    return [...computeAvailabilityAlerts().filter(a=>a.id === 'avail-'+adminClinicId), ...computeBookingAlerts(adminClinicId), ...computeRescheduleAlerts(adminClinicId)];
   }
-  return [...computeAvailabilityAlerts(), ...computeBackupAlert(), ...computeBookingAlerts(null)];
+  return [...computeAvailabilityAlerts(), ...computeBackupAlert(), ...computeBookingAlerts(null), ...computeRescheduleAlerts(null)];
 }
 function renderAlerts(){
   // Banner azul só nos logins de administrador, recepção e profissional.
@@ -5142,6 +5546,7 @@ function openApptModal(apptId, date, hour, type, clinicId){
     updateApptManualPay(a);
     document.getElementById('apptNote').value = a.note || '';
     delBtn.style.display = 'inline-block';
+    updateApptReschedUi(a);
   } else {
     // Criação de um item novo: sempre "Agendamento" — bloquear horário
     // agora só é feito pela aba dedicada "Bloquear Horários".
@@ -5159,6 +5564,7 @@ function openApptModal(apptId, date, hour, type, clinicId){
     updateApptManualPay(null);
     document.getElementById('apptNote').value = '';
     delBtn.style.display = 'none';
+    updateApptReschedUi(null);
   }
   overlay.classList.add('active');
 }
@@ -5376,7 +5782,13 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
     if(editingApptId){
       apptRef = DATA.appointments.find(x=>x.id===editingApptId);
       previousStatus = apptRef.status;
+      const prevWhen = {date: apptRef.date, hour: apptRef.hour};
       Object.assign(apptRef, {patientId, clinicId:targetClinicId, date, hour, status, note, procedures: apptProcedures});
+      // Trocar data/horário de uma consulta ativa pelo próprio formulário também é um reagendamento: registra histórico e avisa por e-mail.
+      const activeSt = ['agendado','confirmado','aguardando_pagamento'];
+      if((prevWhen.date !== date || prevWhen.hour !== hour) && activeSt.includes(previousStatus) && activeSt.includes(status)){
+        recordReschedule(apptRef, prevWhen, roleActorLabel());
+      }
     } else {
       apptRef = {id:uid(), patientId, clinicId:targetClinicId, date, hour, status, note, procedures: apptProcedures};
       DATA.appointments.push(apptRef);
@@ -6271,6 +6683,21 @@ document.getElementById('settingsForm').addEventListener('submit',(e)=>{
   DATA.settings.specialty = document.getElementById('cfgSpecialty').value.trim() || 'Fisioterapia';
   DATA.settings.allowSaturday = document.getElementById('cfgAllowSaturday').checked;
   DATA.settings.allowMultiClinicSameDay = document.getElementById('cfgAllowMultiClinic').checked;
+  {
+    let rMin = parseInt(document.getElementById('cfgReschedMinHours').value, 10);
+    let rMax = parseInt(document.getElementById('cfgReschedMaxCount').value, 10);
+    if(!(rMin >= 0)) rMin = RESCHEDULE_DEFAULT_MIN_HOURS;
+    if(!(rMax >= 0)) rMax = RESCHEDULE_DEFAULT_MAX_COUNT;
+    DATA.settings.rescheduleEnabled = document.getElementById('cfgReschedEnabled').checked;
+    DATA.settings.rescheduleMinHours = Math.min(rMin, 720);
+    DATA.settings.rescheduleMaxCount = Math.min(rMax, 20);
+    document.getElementById('cfgReschedMinHours').value = DATA.settings.rescheduleMinHours;
+    document.getElementById('cfgReschedMaxCount').value = DATA.settings.rescheduleMaxCount;
+    if(sbClient && !reschedRemoteReady && !window.__reschedCfgWarned){
+      window.__reschedCfgWarned = true;
+      alert('Atenção: para o prazo de reagendamento valer para os pacientes, rode uma vez o arquivo supabase/reagendamento.sql no Supabase. Até lá, a configuração fica só neste aparelho.');
+    }
+  }
   const pinVal = document.getElementById('cfgAccessPin').value.trim();
   if(/^\d{5}$/.test(pinVal)){
     DATA.settings.accessPin = pinVal;
@@ -7164,6 +7591,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e)=>{
 
 
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  reschedulingApptId = null;
   loggedPublicPatientId = null;
   loggedPatientId = null;
   selectedSpecialty = null;
@@ -7204,9 +7632,11 @@ function updateConfirmBar(){
   const t = document.getElementById('bkConfirmText'), bar = document.getElementById('bkConfirm');
   if(selectedPublicSlot){ t.textContent = fmtShortDay(selectedPublicSlot.date) + ' · ' + selectedPublicSlot.hour; bar.classList.add('ready'); }
   else { t.textContent = 'Nenhum horário selecionado'; bar.classList.remove('ready'); }
+  const lbl = bar.querySelector('small'); if(lbl) lbl.textContent = reschedulingApptId ? 'Novo horário' : 'Horário escolhido';
 }
 document.getElementById('bkConfirmBtn').addEventListener('click', ()=>{
   if(!selectedPublicSlot){ alert('Escolha um horário para continuar.'); return; }
+  if(reschedulingApptId){ confirmPatientReschedule(); return; }
   openBookModal(selectedPublicSlot.date, selectedPublicSlot.hour);
 });
 document.getElementById('myApptsToggle').addEventListener('click', ()=>{ myApptsTouched = true; myApptsOpen = !myApptsOpen; applyMyApptsState(); });
@@ -7400,13 +7830,14 @@ function renderBookingScreen(){
   }
 
   renderMyAppts();
+  refreshRescheduleUi();
 }
 
 function renderSlotList(date){
   const iso = fmtDate(date);
   const list = document.getElementById('slotList');
   const all = hourRangeForDate(iso, selectedPublicClinicId);
-  const isFree = h => !DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h) && !isPastSlot(iso,h);
+  const isFree = h => !DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h) && !isPastSlot(iso,h) && slotLeadOkForReschedule(iso,h);
   if(selectedPublicSlot && !(selectedPublicSlot.date===iso && isFree(selectedPublicSlot.hour))) selectedPublicSlot = null;
   if(!all.some(isFree)){
     list.innerHTML = '<p class="no-slots">Nenhum horário disponível neste dia.</p>';
@@ -8119,6 +8550,15 @@ function renderMyAppts(){
   container.innerHTML = sessions.map(s=>{
     const canCancel = (s.status==='agendado' || s.status==='confirmado' || s.status==='aguardando_pagamento') && (s.date+s.hour) >= (fmtDate(new Date())+'00:00');
     const needsPayment = s.status==='aguardando_pagamento';
+    const isFutureActive = (s.status==='agendado' || s.status==='confirmado') && (s.date+s.hour) >= (fmtDate(new Date())+'00:00');
+    const rchk = isFutureActive ? rescheduleCheck(s, 'paciente') : null;
+    const reschedBtn = isFutureActive
+      ? (rchk.ok ? `<button type="button" class="btn small secondary" data-resched="${s.id}">Reagendar</button>`
+                 : `<button type="button" class="btn small secondary" disabled>Reagendar</button>`)
+      : '';
+    const reschedNote = (rchk && !rchk.ok) ? `<div class="resched-note">${escapeHtml(rchk.msg)}</div>` : '';
+    const reschedCount = rescheduleCount(s);
+    const reschedInfo = reschedCount ? `<div class="resched-note info">Reagendada ${reschedCount} ${reschedCount===1?'vez':'vezes'}</div>` : '';
     const sessionValueForBtn = (window.FinanceiroAPI && window.FinanceiroAPI.getSignalInfo)
       ? Number(window.FinanceiroAPI.getSignalInfo(s.clinicId).sessionValue || 0) : 0;
     const isDependent = s.patientId !== loggedPatientId;
@@ -8132,8 +8572,10 @@ function renderMyAppts(){
         <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
           ${needsPayment ? `<button type="button" class="btn small" data-pay-signal="${s.id}">Pagar sinal</button>` : ''}
           ${needsPayment && sessionValueForBtn > 0 ? `<button type="button" class="btn small" data-pay-total="${s.id}">Pagar consulta</button>` : ''}
+          ${reschedBtn}
           ${canCancel ? `<button type="button" class="btn small danger" data-cancel="${s.id}">Cancelar</button>` : ''}
         </div>
+        ${reschedNote}${reschedInfo}
       </div>
     </div>`;
   }).join('');
@@ -8175,6 +8617,9 @@ function renderMyAppts(){
       a.paymentType = 'total'; saveData();
       openPayMethod(a, info, 'total');
     });
+  });
+  container.querySelectorAll('[data-resched]').forEach(btn=>{
+    btn.addEventListener('click', ()=> startPatientReschedule(btn.dataset.resched));
   });
   container.querySelectorAll('[data-cancel]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
