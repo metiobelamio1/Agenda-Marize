@@ -1676,7 +1676,8 @@ body.pub-booking #publicBanner{display:none}
 .resched-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:var(--sand-dim);border:1px solid var(--line);border-left:4px solid var(--teal-mid);border-radius:var(--radius);padding:12px 14px;margin:0 0 16px;font-size:.88rem;line-height:1.45;color:var(--ink);}
 .resched-banner[hidden]{display:none;}
 .resched-banner .rb-sub{display:block;margin-top:4px;font-size:.78rem;color:var(--ink-soft);}
-.resched-banner .btn{flex:none;}
+.resched-banner .btn{flex:none;white-space:nowrap;}
+@media (max-width:720px){.resched-banner{flex-wrap:wrap;}}
 .resched-note{margin-top:8px;font-size:.78rem;color:var(--ink-soft);line-height:1.4;}
 .resched-note.info{color:var(--teal-deep);}
 .resched-history{margin:0 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sand);font-size:.8rem;line-height:1.5;color:var(--ink-soft);}
@@ -2398,7 +2399,7 @@ body.pub-booking #publicBanner{display:none}
       </div>
       <div class="resched-banner" id="rescheduleBanner" hidden>
         <div id="rescheduleBannerText"></div>
-        <button type="button" class="btn small secondary" id="rescheduleCancelBtn">Desistir</button>
+        <button type="button" class="btn small secondary" id="rescheduleCancelBtn">Cancelar reagendamento</button>
       </div>
       <div class="bk-body">
         <div class="bk-section-head">
