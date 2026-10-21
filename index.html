@@ -1683,6 +1683,12 @@ body.pub-booking #publicBanner{display:none}
 .resched-history strong{display:block;color:var(--ink);margin-bottom:4px;font-size:.82rem;}
 #reschedHint.warn{color:#8a5a12;}
 .btn.small.secondary[disabled]{opacity:.55;cursor:not-allowed;}
+/* Barra "Horário escolhido / Novo horário": pop-up fixo no canto inferior direito, acompanha a rolagem */
+#publicBookingScreen{padding-bottom:110px;}
+#publicBookingScreen .bk-confirm{position:fixed;top:auto;left:auto;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100vw - 32px));margin:0;z-index:60;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px -10px rgba(18,38,58,.38);}
+@media (max-width:720px){
+  #publicBookingScreen .bk-confirm{left:12px;right:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));}
+}
 </style>
 </head>
 <body>
@@ -2390,11 +2396,11 @@ body.pub-booking #publicBanner{display:none}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
       </div>
+      <div class="resched-banner" id="rescheduleBanner" hidden>
+        <div id="rescheduleBannerText"></div>
+        <button type="button" class="btn small secondary" id="rescheduleCancelBtn">Desistir</button>
+      </div>
       <div class="bk-body">
-        <div class="resched-banner" id="rescheduleBanner" hidden>
-          <div id="rescheduleBannerText"></div>
-          <button type="button" class="btn small secondary" id="rescheduleCancelBtn">Desistir</button>
-        </div>
         <div class="bk-section-head">
           <span class="section-label">Escolha o dia</span>
           <span class="bk-month"><button type="button" id="bkPrevDays" aria-label="Dias anteriores">&lsaquo;</button><span id="bkMonth"></span><button type="button" id="bkNextDays" aria-label="Próximos dias">&rsaquo;</button></span>
