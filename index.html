@@ -1690,6 +1690,14 @@ body.pub-booking #publicBanner{display:none}
 @media (max-width:720px){
   #publicBookingScreen .bk-confirm{left:12px;right:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));}
 }
+/* v55 — ficha do paciente (SOMENTE mobile): nome em largura total, botões lado a lado embaixo, sem o avatar de iniciais */
+@media (max-width:720px){
+  .pf-head{flex-wrap:wrap;align-items:stretch;gap:10px}
+  .pf-head .pf-av{display:none}
+  .pf-head .pf-id{flex:1 1 100%;min-width:0}
+  .pf-head .pf-id h2{overflow-wrap:anywhere;line-height:1.2}
+  .pf-head>button{flex:1 1 calc(50% - 5px);min-width:0;white-space:normal;text-align:center}
+}
 </style>
 </head>
 <body>
@@ -3123,6 +3131,7 @@ function notifyCancellation(appt, cancelledBy, previousStatus){
 const RESCHEDULE_DEFAULT_MIN_HOURS = 6;
 const RESCHEDULE_DEFAULT_MAX_COUNT = 2;
 const RESCHEDULE_SEE_RECEPTION = 'Procure a recepção da clínica.';
+let clinicNameRemoteReady = false;   // true quando agenda_settings já tem a coluna clinic_name
 let reschedRemoteReady = false;   // true quando as colunas reschedule_* já existem em agenda_settings
 let reschedulingApptId = null;    // paciente: consulta que está sendo reagendada agora
 function getRescheduleRules(){
@@ -3837,7 +3846,9 @@ function rowToAgendaClinic(r){
 }
 function settingsToRow(){
   return {
-    id: 'main', specialty: DATA.settings.specialty, allow_saturday: !!DATA.settings.allowSaturday,
+    id: 'main', specialty: DATA.settings.specialty,
+    ...((clinicNameRemoteReady && currentRole === 'admin') ? { clinic_name: DATA.settings.clinicName || 'Minha Clínica' } : {}),
+    allow_saturday: !!DATA.settings.allowSaturday,
     allow_multi_clinic_same_day: !!DATA.settings.allowMultiClinicSameDay,
     ...(adminCredsWritable ? {
       access_pin: DATA.settings.accessPin,
@@ -3857,6 +3868,7 @@ function settingsToRow(){
 function rowToSettings(r){
   return {
     specialty: r.specialty || 'Fisioterapia', allowSaturday: r.allow_saturday !== false,
+    ...(r.clinic_name ? { clinicName: r.clinic_name } : {}),
     allowMultiClinicSameDay: !!r.allow_multi_clinic_same_day,
     ...(r.access_pin ? { accessPin: r.access_pin } : {}),
     ...(r.professional_login ? { professionalLogin: r.professional_login, professionalPassword: r.professional_password || '1234' } : {}),
@@ -3961,6 +3973,11 @@ async function loadAgendaConfigFromSupabase(){
         else DATA.availPermanent = {};
       }
       if(settingsRes.data && settingsRes.data.length && ('reschedule_min_hours' in settingsRes.data[0])) reschedRemoteReady = true;
+      if(settingsRes.data && settingsRes.data.length && ('clinic_name' in settingsRes.data[0])){
+        clinicNameRemoteReady = true;
+        // Banco ainda sem nome gravado: sobe o nome que já está neste aparelho (quando for o admin).
+        if(!settingsRes.data[0].clinic_name && DATA.settings.clinicName && currentRole === 'admin') setTimeout(()=>{ try{ syncAgendaConfigToSupabase(); }catch(e){} }, 0);
+      }
       const faltaClinica = !(clinicsRes.data && clinicsRes.data.length);
       const faltaRecepcao = !(settingsRes.data && settingsRes.data.length && settingsRes.data[0].reception_login);
       if(faltaClinica || faltaRecepcao) await syncAgendaConfigToSupabase();
@@ -4157,7 +4174,20 @@ async function saveData(){
 // window.__agendaClinicNames e avisa o financeiro (se já estiver
 // carregado) via window.__onAgendaClinicNamesChanged, para que o nome
 // exibido no Financeiro sempre acompanhe o da Agenda.
+/* v55 — aplica o nome da clínica (Configurações > Geral) em TODOS os layouts:
+   cabeçalho interno, título da aba, banners do paciente e painéis de marca do login. */
+function applyClinicBranding(){
+  try{
+    const name = (DATA.settings && DATA.settings.clinicName) || '';
+    const h1 = document.querySelector('header.top .brand h1');
+    if(h1 && name) h1.textContent = name;
+    if(name) document.title = name + ' · ' + ((DATA.settings && DATA.settings.specialty) || 'Fisioterapia');
+    [].forEach.call(document.querySelectorAll('.auth-hero .hb'), e=>{ e.textContent = name; });
+    if(typeof renderPublicArea === 'function' && typeof publicMode !== 'undefined' && publicMode) renderPublicArea();
+  }catch(e){ console.error('applyClinicBranding', e); }
+}
 function publishClinicNamesToWindow(){
+  applyClinicBranding();
   window.__agendaClinicNames = {};
   DATA.clinics.forEach(c=>{ window.__agendaClinicNames[c.id] = c.name; (window.__agendaClinicActive = window.__agendaClinicActive || {})[c.id] = c.active !== false; });
   if(typeof window.__onAgendaClinicNamesChanged === 'function'){
@@ -4474,6 +4504,7 @@ async function refreshStaffPasswordHashes(sent){
 /* ---------- INIT ---------- */
 function init(){
   document.getElementById('specialtyLabel').textContent = DATA.settings.specialty || 'Fisioterapia';
+  applyClinicBranding();
   fillSettingsForm();
 
   const todayEl = document.getElementById('todayLabel');
@@ -6757,6 +6788,7 @@ document.getElementById('settingsForm').addEventListener('submit',(e)=>{
   });
   saveData();
   document.getElementById('specialtyLabel').textContent = DATA.settings.specialty;
+  applyClinicBranding();
   renderAdminClinicTabs();
   renderAgenda();
   renderAvailabilityPanel();
@@ -9842,7 +9874,7 @@ const MONEY_FMT = '"R$" #,##0.00';
 // tem menos campos que os outros. Isso garante que a coluna de valor de
 // A receber, Recebido e Despesas sempre caia na mesma coluna (G).
 const RECEIVABLE_COLUMNS = [
-  { header:'Clínica', key:'clinica', width:16, align:'left' },
+  { header:'Profissional', key:'clinica', width:16, align:'left' },
   { header:'Vencimento', key:'vencimento', width:14, align:'center' },
   { header:'Data de pagamento', key:'dataPagamento', width:16, align:'center' },
   { header:'Descrição', key:'descricao', width:36, align:'left' },
@@ -10038,6 +10070,19 @@ function buildPeriodLabel(periodo){
   }
 }
 
+// v55 — largura (em caracteres do Excel) necessária para o maior texto de uma coluna.
+// Usa folga porque o Calibri 10 tem caracteres largos (maiúsculas, travessão) e o
+// Excel corta o texto quando a largura fica no limite.
+function xlsNeededWidth(values, header){
+  let max = String(header || '').length;
+  (values || []).forEach(v=>{
+    if(v === null || v === undefined) return;
+    const len = String(v).length;
+    if(len > max) max = len;
+  });
+  return Math.ceil(max * 1.1) + 3;
+}
+
 // Desenha uma aba completa: título, subtítulo, cabeçalho de colunas colorido,
 // linhas em zebra, valores em formato de dinheiro (R$) e filtro automático.
 function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, cellColorFn, totalLabel, totalOverrides, noAutoFilter }){
@@ -10070,6 +10115,12 @@ function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, c
   ws.getRow(headerRowIdx).height = 20;
 
   columns.forEach((col, i)=>{ ws.getColumn(i+1).width = col.width || 16; });
+  // v55 — Descrição se ajusta ao maior texto preenchido
+  columns.forEach((col, i)=>{
+    if(col.key !== 'descricao') return;
+    const need = xlsNeededWidth(rows.map(r=>r[col.key]), col.header);
+    if(need > (ws.getColumn(i+1).width || 0)) ws.getColumn(i+1).width = need;
+  });
 
   if(!rows.length){
     ws.mergeCells(headerRowIdx+1, 1, headerRowIdx+1, colCount);
@@ -10221,6 +10272,18 @@ function addCombinedSheet(workbook, sections, periodLabel, clinicId){
   for(let g=1; g<=GRID_COLS; g++){
     ws.getColumn(g).width = leafWidthByCol[g] || 3;
   }
+  // v55 — largura automática: se algum texto da Descrição for maior que o espaço
+  // da coluna (ou das colunas mescladas dela), amplia a coluna para caber inteiro.
+  sections.forEach(sec=>{
+    sec.columns.forEach(col=>{
+      if(col.key !== 'descricao') return;
+      const span = (col.span && col.span > 1) ? col.span : 1;
+      const need = xlsNeededWidth(sec.rows.map(r=>r[col.key]), col.header);
+      let have = 0;
+      for(let g=col.col; g<col.col+span; g++) have += ws.getColumn(g).width || 0;
+      if(need > have) ws.getColumn(col.col).width = (ws.getColumn(col.col).width || 0) + (need - have);
+    });
+  });
 
   let rowCursor = 4;
   sections.forEach(sec=>{
