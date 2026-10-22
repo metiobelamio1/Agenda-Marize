@@ -10073,7 +10073,7 @@ function buildPeriodLabel(periodo){
 // v56 — AUTO-AJUSTE DAS PLANILHAS ---------------------------------------
 // Larguras são em "caracteres do Excel". Texto maior que o limite quebra em
 // mais de uma linha (a altura da linha cresce) em vez de ficar cortado.
-const XLS_CAP_DESC = 70, XLS_CAP_TEXT = 48, XLS_CAP_MONEY = 22;
+const XLS_CAP_DESC = 90, XLS_CAP_TEXT = 48, XLS_CAP_MONEY = 22;
 function xlsDate(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? '' : iso)); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; }
 function xlsNum(v){
   if(typeof v === 'string'){
@@ -10100,8 +10100,10 @@ function xlsFitWidth(col, rows, totals){
 function xlsLines(text, width){
   const t = (text === null || text === undefined) ? '' : String(text);
   if(!t) return 1;
-  const w = Math.max(1, (width || 8) - 1);
-  return t.split(/\r?\n/).reduce((sum, part)=> sum + Math.max(1, Math.ceil(part.length * 1.15 / w)), 0);
+  // A largura já é calculada com folga a partir do texto (ver xlsFitWidth), então só
+  // conta como "mais de uma linha" o que realmente passa da largura da coluna.
+  const w = Math.max(1, width || 8);
+  return t.split(/\r?\n/).reduce((sum, part)=> sum + Math.max(1, Math.ceil(part.length / (w * 1.1))), 0);
 }
 // Altura da linha = a maior quantidade de linhas entre as células de texto.
 function xlsRowHeight(items){
