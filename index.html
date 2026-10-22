@@ -9849,7 +9849,7 @@ function filterSuffix(key){
   const range = ranges[key];
   const clinicId = clinicFilters[key];
   const clinic = clinicId ? getClinic(clinicId) : null;
-  const clinicPart = clinic ? clinic.name.replace(/\s+/g,'-').toLowerCase() : 'todas-clinicas';
+  const clinicPart = clinic ? safeFilePart(clinic.name) : 'todas-clinicas';
   return `${RANGE_LABELS[range] || range}_${clinicPart}`;
 }
 
@@ -9916,23 +9916,23 @@ function receivableExportRows(rangeOverride, includeQuitados, clinicOverride){
     // "Recebido" é somado diretamente dos pagamentos registrados em r.payments
     // — a mesma fonte de dados que alimenta a seção "Recebido" do sistema —
     // em vez de depender só do campo acumulado r.paidAmount.
-    const recebidoTotal = (r.payments || []).reduce((s,p)=> s + Number(p.amount||0), 0);
+    const recebidoTotal = (r.payments || []).reduce((s,p)=> s + xlsNum(p.amount), 0);
     // Data de pagamento: a mais recente entre os pagamentos já registrados
     // (parcial ou total). Fica em branco enquanto não houver nenhum pagamento.
     const lastPaymentDate = (r.payments || []).reduce((max,p)=> (p.date && (!max || p.date > max)) ? p.date : max, null);
     const statusLabel = r.status === 'parcial' ? 'Pag. parcial' : (r.status === 'recebido' ? 'Recebido' : 'Pendente');
     return {
       _clinicId: r.clinicId,
-      vencimento: isoToDisplay(r.dueDate),
-      dataPagamento: lastPaymentDate ? isoToDisplay(lastPaymentDate) : '',
+      vencimento: xlsDate(r.dueDate),
+      dataPagamento: lastPaymentDate ? xlsDate(lastPaymentDate) : '',
       clinica: c ? c.name : '—',
-      descricao: r.desc,
+      descricao: r.desc == null ? '' : String(r.desc),
       status: statusLabel,
-      totalBruto: Number(r.grossValue!=null ? r.grossValue : r.value || 0),
-      aReceber: Number(r.value || 0),
-      recebido: recebidoTotal,
-      restante: remaining(r),
-      taxaClinica: Number(r.clinicFee || 0)
+      totalBruto: xlsNum(r.grossValue!=null ? r.grossValue : r.value),
+      aReceber: xlsNum(r.value),
+      recebido: xlsNum(recebidoTotal),
+      restante: xlsNum(remaining(r)),
+      taxaClinica: xlsNum(r.clinicFee)
     };
   });
 }
@@ -9948,10 +9948,10 @@ function receivedExportRows(rangeOverride){
     const c = getClinic(p.clinicId);
     return {
       _clinicId: p.clinicId,
-      recebidoEm: isoToDisplay(p.date),
+      recebidoEm: xlsDate(p.date),
       clinica: c ? c.name : '—',
-      descricao: p.desc,
-      valor: Number(p.amount)
+      descricao: p.desc == null ? '' : String(p.desc),
+      valor: xlsNum(p.amount)
     };
   });
 }
@@ -9966,11 +9966,11 @@ function expenseExportRows(rangeOverride, clinicOverride){
   return items.map(e=>{
     return {
       _clinicId: e.clinicId,
-      data: isoToDisplay(e.date),
+      data: xlsDate(e.date),
       clinica: expenseClinicName(e.clinicId),
-      descricao: e.desc,
+      descricao: e.desc == null ? '' : String(e.desc),
       categoria: e.category || '—',
-      valor: Number(e.value)
+      valor: xlsNum(e.value)
     };
   });
 }
@@ -10070,23 +10070,50 @@ function buildPeriodLabel(periodo){
   }
 }
 
-// v55 — largura (em caracteres do Excel) necessária para o maior texto de uma coluna.
-// Usa folga porque o Calibri 10 tem caracteres largos (maiúsculas, travessão) e o
-// Excel corta o texto quando a largura fica no limite.
-function xlsNeededWidth(values, header){
-  let max = String(header || '').length;
-  (values || []).forEach(v=>{
-    if(v === null || v === undefined) return;
-    const len = String(v).length;
-    if(len > max) max = len;
-  });
-  return Math.ceil(max * 1.1) + 3;
+// v56 — AUTO-AJUSTE DAS PLANILHAS ---------------------------------------
+// Larguras são em "caracteres do Excel". Texto maior que o limite quebra em
+// mais de uma linha (a altura da linha cresce) em vez de ficar cortado.
+const XLS_CAP_DESC = 70, XLS_CAP_TEXT = 48, XLS_CAP_MONEY = 22;
+function xlsDate(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? '' : iso)); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; }
+function xlsNum(v){
+  if(typeof v === 'string'){
+    const t = v.trim();
+    v = t.indexOf(',') >= 0 ? t.replace(/\./g, '').replace(',', '.') : t;
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function safeFilePart(s){ return String(s == null ? '' : s).trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-').toLowerCase() || 'arquivo'; }
+function xlsCellText(col, v){
+  if(v === null || v === undefined || v === '') return '';
+  if(col.money && typeof v === 'number') return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  return String(v);
+}
+// Largura necessária para a coluna (cabeçalho + maior texto + totais), respeitando o teto.
+function xlsFitWidth(col, rows, totals){
+  let max = String(col.header || '').length + 2; // + espaço da setinha do filtro
+  rows.forEach(r=>{ const t = xlsCellText(col, r[col.key]); if(t.length > max) max = t.length; });
+  (totals || []).forEach(v=>{ const t = xlsCellText(col, v); if(t.length > max) max = t.length; });
+  const cap = col.money ? XLS_CAP_MONEY : (col.key === 'descricao' ? XLS_CAP_DESC : XLS_CAP_TEXT);
+  return Math.min(Math.ceil(max * 1.1) + 2, cap);
+}
+function xlsLines(text, width){
+  const t = (text === null || text === undefined) ? '' : String(text);
+  if(!t) return 1;
+  const w = Math.max(1, (width || 8) - 1);
+  return t.split(/\r?\n/).reduce((sum, part)=> sum + Math.max(1, Math.ceil(part.length * 1.15 / w)), 0);
+}
+// Altura da linha = a maior quantidade de linhas entre as células de texto.
+function xlsRowHeight(items){
+  let lines = 1;
+  items.forEach(it=>{ lines = Math.max(lines, xlsLines(it.text, it.width)); });
+  return lines <= 1 ? 18 : Math.min(409, lines * 13.5 + 5);
 }
 
 // Desenha uma aba completa: título, subtítulo, cabeçalho de colunas colorido,
 // linhas em zebra, valores em formato de dinheiro (R$) e filtro automático.
 function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, cellColorFn, totalLabel, totalOverrides, noAutoFilter }){
-  const ws = workbook.addWorksheet(sheetName, { views:[{ state:'frozen', ySplit:4 }] });
+  const ws = workbook.addWorksheet(sheetName, { views:[{ state:'frozen', ySplit:4 }], pageSetup:{ orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0 } });
   const colCount = columns.length;
 
   ws.mergeCells(1, 1, 1, colCount);
@@ -10114,12 +10141,10 @@ function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, c
   });
   ws.getRow(headerRowIdx).height = 20;
 
-  columns.forEach((col, i)=>{ ws.getColumn(i+1).width = col.width || 16; });
-  // v55 — Descrição se ajusta ao maior texto preenchido
+  // v56 — largura automática de TODAS as colunas (texto e valores), com teto
   columns.forEach((col, i)=>{
-    if(col.key !== 'descricao') return;
-    const need = xlsNeededWidth(rows.map(r=>r[col.key]), col.header);
-    if(need > (ws.getColumn(i+1).width || 0)) ws.getColumn(i+1).width = need;
+    const tot = col.money ? [rows.reduce((sum,r)=> sum + Math.abs(Number(r[col.key] || 0)), 0)] : [];
+    ws.getColumn(i+1).width = Math.max(col.width || 16, xlsFitWidth(col, rows, tot));
   });
 
   if(!rows.length){
@@ -10131,7 +10156,7 @@ function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, c
   } else {
     rows.forEach((row, idx)=>{
       const rIdx = headerRowIdx + 1 + idx;
-      ws.getRow(rIdx).height = 18;
+      ws.getRow(rIdx).height = xlsRowHeight(columns.map((col, i)=>({ text: col.money ? '' : row[col.key], width: ws.getColumn(i+1).width })));
       columns.forEach((col, i)=>{
         const cell = ws.getCell(rIdx, i+1);
         cell.value = row[col.key];
@@ -10139,7 +10164,7 @@ function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, c
         cell.font = { name:'Calibri', size:10, color:{ argb: customColor || XLS_COLOR.ink } };
         cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: idx % 2 === 0 ? XLS_COLOR.bandA : XLS_COLOR.bandB } };
         cell.border = { bottom: { style:'thin', color:{ argb:'FFDCD5C4' } } };
-        cell.alignment = { vertical:'middle', horizontal: col.align || (col.money ? 'right' : 'left') };
+        cell.alignment = { vertical:'middle', horizontal: col.align || (col.money ? 'right' : 'left'), wrapText: !col.money };
         if(col.money){
           cell.numFmt = MONEY_FMT;
         }
@@ -10196,7 +10221,7 @@ function addStyledSheet(workbook, { sheetName, title, subtitle, columns, rows, c
 // seção não deixa vão vazio nem "empresta" espaço de outra seção — o
 // que sobra é só a diferença de largura total entre as seções.
 function addCombinedSheet(workbook, sections, periodLabel, clinicId){
-  const ws = workbook.addWorksheet('Financeiro completo', { views:[{ state:'frozen', ySplit:2 }] });
+  const ws = workbook.addWorksheet('Financeiro completo', { views:[{ state:'frozen', ySplit:2 }], pageSetup:{ orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0 } });
 
   // Clona as colunas de cada seção (pra não mutar as constantes globais
   // RECEIVABLE_COLUMNS/EXPENSE_COLUMNS) e recalcula "col" sequencialmente
@@ -10265,22 +10290,30 @@ function addCombinedSheet(workbook, sections, periodLabel, clinicId){
   const leafWidthByCol = {};
   sections.forEach(s=>{
     s.columns.forEach(c=>{
-      const w = c.width || 16;
+      // v56 — colunas simples (sem span) se ajustam ao conteúdo; as mescladas (flex) são tratadas abaixo
+      const isSpan = c.span && c.span > 1;
+      const tot = c.money ? [s.rows.reduce((sum,r)=> sum + Math.abs(Number(r[c.key] || 0)), 0)] : [];
+      const w = isSpan ? (c.width || 16) : Math.max(c.width || 16, xlsFitWidth(c, s.rows, tot));
       if(!leafWidthByCol[c.col] || w > leafWidthByCol[c.col]) leafWidthByCol[c.col] = w;
     });
   });
   for(let g=1; g<=GRID_COLS; g++){
     ws.getColumn(g).width = leafWidthByCol[g] || 3;
   }
-  // v55 — largura automática: se algum texto da Descrição for maior que o espaço
-  // da coluna (ou das colunas mescladas dela), amplia a coluna para caber inteiro.
+  // v56 — largura total mínima: evita título/subtítulo cortados quando sobram poucas colunas
+  {
+    let totalW = 0;
+    for(let g=1; g<=GRID_COLS; g++) totalW += ws.getColumn(g).width || 0;
+    if(totalW < 34) ws.getColumn(1).width = (ws.getColumn(1).width || 0) + (34 - totalW);
+  }
+  // v56 — colunas mescladas (ex.: Descrição de Despesas): se o espaço somado delas
+  // não comporta o maior texto (até o teto), amplia a primeira coluna da faixa.
   sections.forEach(sec=>{
     sec.columns.forEach(col=>{
-      if(col.key !== 'descricao') return;
-      const span = (col.span && col.span > 1) ? col.span : 1;
-      const need = xlsNeededWidth(sec.rows.map(r=>r[col.key]), col.header);
+      if(!(col.span && col.span > 1)) return;
+      const need = xlsFitWidth(col, sec.rows, []);
       let have = 0;
-      for(let g=col.col; g<col.col+span; g++) have += ws.getColumn(g).width || 0;
+      for(let g=col.col; g<col.col+col.span; g++) have += ws.getColumn(g).width || 0;
       if(need > have) ws.getColumn(col.col).width = (ws.getColumn(col.col).width || 0) + (need - have);
     });
   });
@@ -10334,7 +10367,11 @@ function addCombinedSheet(workbook, sections, periodLabel, clinicId){
     } else {
       sec.rows.forEach((row, idx)=>{
         const rIdx = rowCursor;
-        ws.getRow(rIdx).height = 18;
+        ws.getRow(rIdx).height = xlsRowHeight(sec.columns.map(col=>{
+          const sp = (col.span && col.span > 1) ? col.span : 1;
+          let wdt = 0; for(let g=col.col; g<col.col+sp; g++) wdt += ws.getColumn(g).width || 0;
+          return { text: col.money ? '' : row[col.key], width: wdt };
+        }));
         const bandColor = idx % 2 === 0 ? XLS_COLOR.bandA : XLS_COLOR.bandB;
         sec.columns.forEach(col=>{
           if(col.span && col.span > 1){
@@ -10346,7 +10383,7 @@ function addCombinedSheet(workbook, sections, periodLabel, clinicId){
           cell.font = { name:'Calibri', size:10, color:{ argb: customColor || XLS_COLOR.ink } };
           cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb: bandColor } };
           cell.border = { bottom: { style:'thin', color:{ argb:'FFDCD5C4' } } };
-          cell.alignment = { vertical:'middle', horizontal: col.align || (col.money ? 'right' : 'left') };
+          cell.alignment = { vertical:'middle', horizontal: col.align || (col.money ? 'right' : 'left'), wrapText: !col.money };
           if(col.money){
             cell.numFmt = MONEY_FMT;
           }
@@ -10463,6 +10500,10 @@ async function exportSectionToExcel(key){
   }
   const prefs = applyExcelColumnPrefs(key, columns, rows, clinicFilters[key]);
   columns = prefs.columns; rows = prefs.rows;
+  if(!columns.length){
+    alert('Todas as colunas dessa planilha estão desmarcadas em Configurações > Colunas do Excel. Marque ao menos uma para exportar.');
+    return;
+  }
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Sistema Financeiro APAE';
   workbook.created = new Date();
@@ -10478,7 +10519,12 @@ async function exportAllToExcel(periodo, clinicId){
   const receivablePrefs = applyExcelColumnPrefs('receivable', RECEIVABLE_COLUMNS, receivableExportRows(periodo, true, clinicId), clinicId);
   const expensePrefs = applyExcelColumnPrefs('expense', EXPENSE_COLUMNS, expenseExportRows(periodo, clinicId), clinicId);
 
-  addCombinedSheet(workbook, [
+  // v56 — validações antes de montar: sem lançamentos, ou com todas as colunas desmarcadas, não gera planilha vazia
+  if(!receivablePrefs.rows.length && !expensePrefs.rows.length){
+    alert('Não há dados para exportar com o período e o profissional escolhidos.');
+    return;
+  }
+  const combinedSections = [
     {
       title:'A RECEBER', subtitle: buildSubtitle('receivable', periodo, false, clinicId),
       columns: receivablePrefs.columns, rows: receivablePrefs.rows,
@@ -10489,10 +10535,15 @@ async function exportAllToExcel(periodo, clinicId){
       columns: expensePrefs.columns, rows: expensePrefs.rows,
       cellColorFn: k => k==='valor' ? XLS_COLOR.red : null, barColor: XLS_COLOR.red
     }
-  ], buildPeriodLabel(periodo), clinicId);
+  ].filter(sec => sec.columns.length > 0);
+  if(!combinedSections.length){
+    alert('Todas as colunas desse relatório estão desmarcadas em Configurações > Colunas do Excel. Marque ao menos uma para exportar.');
+    return;
+  }
+  addCombinedSheet(workbook, combinedSections, buildPeriodLabel(periodo), clinicId);
 
   const clinic = clinicId ? getClinic(clinicId) : null;
-  const clinicSuffix = clinic ? clinic.name.replace(/\s+/g,'-').toLowerCase() : 'todas-clinicas';
+  const clinicSuffix = clinic ? safeFilePart(clinic.name) : 'todas-clinicas';
   const periodoSuffix = RANGE_LABELS[periodo] || periodo || 'todos';
   await downloadWorkbook(workbook, `financeiro_${periodoSuffix}_${clinicSuffix}_${fmtDate(new Date())}.xlsx`);
 }
@@ -10508,24 +10559,25 @@ function livroCaixaExportRows(rangeOverride, clinicOverride){
   const entradas = getAllPayments()
     .filter(p=> range==='todos' ? true : withinRange(p.date, range))
     .filter(p=> !filterClinic || p.clinicId===filterClinic)
-    .map(p=>({ date:p.date, clinicId:p.clinicId, desc:p.desc, entrada:Number(p.amount)||0, saida:0 }));
+    .map(p=>({ date:p.date || '', clinicId:p.clinicId, desc:p.desc, entrada:xlsNum(p.amount), saida:0 }));
 
   const saidas = DATA.expenses
     .filter(e=> range==='todos' ? true : withinRange(e.date, range))
     .filter(e=> !filterClinic || e.clinicId===filterClinic)
-    .map(e=>({ date:e.date, clinicId:e.clinicId, desc:e.desc, entrada:0, saida:Number(e.value)||0 }));
+    .map(e=>({ date:e.date || '', clinicId:e.clinicId, desc:e.desc, entrada:0, saida:xlsNum(e.value), isExpense:true }));
 
   const movimentos = entradas.concat(saidas).sort((a,b)=> a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
 
   let saldo = 0;
   return movimentos.map(m=>{
-    saldo += m.entrada - m.saida;
+    saldo = xlsNum(saldo + m.entrada - m.saida);
     const c = getClinic(m.clinicId);
     return {
       _clinicId: m.clinicId,
-      data: isoToDisplay(m.date),
-      clinica: c ? c.name : '—',
-      descricao: m.desc,
+      data: xlsDate(m.date),
+      // despesa avulsa ("Gasto profissional") não é uma clínica de verdade: usa o mesmo nome do relatório
+      clinica: m.isExpense ? expenseClinicName(m.clinicId) : (c ? c.name : '—'),
+      descricao: m.desc == null ? '' : String(m.desc),
       entrada: m.entrada || null,
       saida: m.saida || null,
       saldo: saldo
@@ -10548,11 +10600,15 @@ async function exportLivroCaixaToExcel(periodo, clinicId){
   workbook.created = new Date();
 
   const rows = livroCaixaExportRows(periodo, clinicId);
+  if(!rows.length){
+    alert('Não há movimentações (entradas ou saídas) para exportar com o período e o profissional escolhidos.');
+    return;
+  }
   const clinic = clinicId ? getClinic(clinicId) : null;
   const clinicaLabel = clinic ? clinic.name : 'Todos os profissionais';
   const hojeLabel = isoToDisplay(fmtDate(new Date()));
   const periodoLabel = periodo === 'todos'
-    ? (rows.length ? `De ${rows[0].data} até ${hojeLabel}` : `Até ${hojeLabel}`)
+    ? (rows.some(r=>r.data) ? `De ${rows.find(r=>r.data).data} até ${hojeLabel}` : `Até ${hojeLabel}`)
     : ({ semana:'Esta semana', mes:'Este mês', ano:'Este ano' }[periodo] || periodo);
   const geradoEm = new Date().toLocaleString('pt-BR');
   const title = `Livro caixa — ${periodoLabel} · ${clinicaLabel}`;
@@ -10571,7 +10627,7 @@ async function exportLivroCaixaToExcel(periodo, clinicId){
     noAutoFilter: true
   });
 
-  const clinicSuffix = clinic ? clinic.name.replace(/\s+/g,'-').toLowerCase() : 'todas-clinicas';
+  const clinicSuffix = clinic ? safeFilePart(clinic.name) : 'todas-clinicas';
   const periodoSuffix = RANGE_LABELS[periodo] || periodo || 'todos';
   await downloadWorkbook(workbook, `livro-caixa_${periodoSuffix}_${clinicSuffix}_${fmtDate(new Date())}.xlsx`);
 }
