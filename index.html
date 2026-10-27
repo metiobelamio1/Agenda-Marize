@@ -3777,8 +3777,12 @@ async function loadMyPublicDataFromSupabase(){
     const mineApptIds = new Set(mineAppts.map(a=>a.id));
     const busy = (bRes.data || []).filter(b=>!mineApptIds.has(b.id))
       .map(b=>({ id: 'busy_' + b.id, clinicId: b.clinic_id, date: b.date, hour: b.hour, status: 'bloqueado', patientId: null }));
-    DATA.appointments = DATA.appointments
-      .filter(a=>!myIds.includes(a.patientId) && !String(a.id).startsWith('busy_'))
+    // No modo paciente a verdade é o banco: minhas consultas + horários ocupados (view). Sobras antigas deste aparelho
+    // (por exemplo, de um login de equipe feito antes na mesma tela) não podem segurar um horário que o banco já liberou.
+    // Se alguma das duas consultas falhar, mantém o comportamento antigo para não esconder dados.
+    const dadosOk = !aRes.error && !bRes.error;
+    DATA.appointments = (dadosOk ? [] : DATA.appointments
+      .filter(a=>!myIds.includes(a.patientId) && !String(a.id).startsWith('busy_')))
       .concat(mineAppts, busy);
   }catch(e){ console.error('Falha ao buscar meus dados no Supabase', e); }
 }
@@ -4528,7 +4532,14 @@ function setPublicMode(on){
   document.getElementById('modeToggleBtn').style.display = on ? 'none' : 'inline-block';
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   if(on){
-    if(currentRole){ currentRole = null; switchToAnonymousSupabaseSession(); }
+    if(currentRole){
+      currentRole = null;
+      // A sessão anônima nova não está ligada a nenhum paciente: um login de paciente que ficou na tela
+      // pertencia à sessão antiga e faria "validar o seu cadastro" falhar. Zera para o paciente entrar de novo.
+      reschedulingApptId = null; loggedPublicPatientId = null; loggedPatientId = null; selectedSpecialty = null; selectedPublicClinicId = null;
+      try{ saveSession(); }catch(e){}
+      switchToAnonymousSupabaseSession().then(()=>{ try{ setAuthTab('login'); renderPublicArea(); }catch(e){} });
+    }
     document.getElementById('adminClinicTabs').style.display = 'none';
     currentPanelName = 'agenda';
     historyClearPanel();
