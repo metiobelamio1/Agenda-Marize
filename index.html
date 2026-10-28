@@ -3087,10 +3087,14 @@ try{
 const EMAIL_NOTIFY_URL = 'https://fumvxzcfpdwkabimxmgx.supabase.co/functions/v1/send-notification'; // já publicada
 function sendSystemEmail(type, data){
   if(!EMAIL_NOTIFY_URL || EMAIL_NOTIFY_URL.includes('SEU-PROJETO-AQUI')) return;
+  // send-notification v2: o servidor monta o e-mail a partir do banco pelo appointmentId e confere se o evento é real.
+  // "cancelledBy" e "amount" são só rótulos. O campo "data" é ignorado pela v2; fica para a função antiga (pode sair depois).
+  const appointmentId = data && data.appointmentId;
+  if(!appointmentId) console.warn('E-mail de notificação sem appointmentId (' + type + ')');
   fetch(EMAIL_NOTIFY_URL, {
     method: 'POST',
     headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${PAYMENT_ANON_KEY}`},
-    body: JSON.stringify({type, data})
+    body: JSON.stringify({type, appointmentId, cancelledBy: data && data.cancelledBy, amount: data && data.amount, data})
   }).then(async resp=>{
     // Antes só erro de rede aparecia; respostas 401/403/502 (Resend recusou, chave errada etc.) passavam em silêncio.
     if(!resp.ok){
@@ -3109,6 +3113,7 @@ function notifyCancellation(appt, cancelledBy, previousStatus){
   const pat = DATA.patients.find(p=>p.id===appt.patientId);
   const clinic = getClinic(appt.clinicId);
   sendSystemEmail(wasAttempt ? 'booking_attempt_cancelled' : 'appointment_cancelled', {
+    appointmentId: appt.id,
     patientName: pat ? pat.name : '',
     professionalName: clinic ? clinic.name : '',
     professionalSpecialty: clinic ? (clinic.specialty || '') : '',
@@ -3202,6 +3207,7 @@ function recordReschedule(a, from, by, opts){
   const pat = DATA.patients.find(p=>p.id===a.patientId);
   const clinic = getClinic(a.clinicId);
   sendSystemEmail('appointment_rescheduled', {
+    appointmentId: a.id,
     patientName: pat ? pat.name : '',
     professionalName: clinic ? clinic.name : '',
     professionalSpecialty: clinic ? (clinic.specialty || '') : '',
@@ -5726,6 +5732,7 @@ document.getElementById('apptManualPayBtn').addEventListener('click', ()=>{
 
   const clinic = getClinic(a.clinicId);
   sendSystemEmail('payment_receipt', {
+    appointmentId: a.id,
     patientName: patient ? patient.name : '',
     professionalName: clinic ? clinic.name : '',
     professionalSpecialty: clinic ? (clinic.specialty || '') : '',
@@ -5871,6 +5878,7 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
     if(status === 'confirmado' && previousStatus !== 'confirmado'){
       const confirmedClinic = getClinic(targetClinicId);
       sendSystemEmail('appointment_confirmed', {
+        appointmentId: apptRef.id,
         patientName: patientRef.name || '',
         professionalName: confirmedClinic ? confirmedClinic.name : '',
         professionalSpecialty: confirmedClinic ? (confirmedClinic.specialty || '') : '',
@@ -8100,6 +8108,7 @@ document.getElementById('bookForm').addEventListener('submit', async (e)=>{
   const bookedPatient = DATA.patients.find(p=>p.id===targetPatientId);
   const bookedClinic = getClinic(selectedPublicClinicId);
   sendSystemEmail('new_booking', {
+    appointmentId: newPublicAppt.id,
     patientName: bookedPatient ? bookedPatient.name : '',
     professionalName: bookedClinic ? bookedClinic.name : '',
     professionalSpecialty: bookedClinic ? (bookedClinic.specialty || '') : '',
@@ -8536,6 +8545,7 @@ function finishPixPayment(appt, amountPaid){
   const paidPatient = DATA.patients.find(p=>p.id===appt.patientId);
   const paidClinic = getClinic(appt.clinicId);
   sendSystemEmail('payment_receipt', {
+    appointmentId: appt.id,
     patientName: paidPatient ? paidPatient.name : '',
     professionalName: paidClinic ? paidClinic.name : '',
     professionalSpecialty: paidClinic ? (paidClinic.specialty || '') : '',
