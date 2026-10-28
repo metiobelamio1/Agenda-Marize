@@ -1885,15 +1885,19 @@ body.pub-booking #publicBanner{display:none}
       </div>
       <div class="field-row" style="margin-top:8px;">
         <div class="field">
-          <label>Reagendar até quantas horas antes?</label>
+          <label>Reagendar a consulta até quantas horas antes dela?</label>
           <input type="number" id="cfgReschedMinHours" min="0" max="720" step="1" inputmode="numeric" placeholder="6">
+        </div>
+        <div class="field">
+          <label>Novo horário: antecedência mínima (horas)</label>
+          <input type="number" id="cfgReschedNewMinHours" min="0" max="720" step="1" inputmode="numeric" placeholder="vazio = igual ao prazo ao lado">
         </div>
         <div class="field">
           <label>Máximo de reagendamentos por consulta</label>
           <input type="number" id="cfgReschedMaxCount" min="0" max="20" step="1" inputmode="numeric" placeholder="2">
         </div>
       </div>
-      <div class="hint">O paciente só consegue reagendar até esse número de horas antes da consulta e até o máximo de vezes informado (0 = sem limite de vezes). Depois do prazo, ele é orientado a procurar a recepção, sem nenhuma consequência. Recepção, administrador e profissional reagendam sem limite. O novo horário escolhido pelo paciente também precisa ter essa mesma antecedência.</div>
+      <div class="hint">O paciente só consegue reagendar até esse número de horas antes da consulta e até o máximo de vezes informado (0 = sem limite de vezes). Depois do prazo, ele é orientado a procurar a recepção, sem nenhuma consequência. Recepção, administrador e profissional reagendam sem limite. A antecedência do novo horário é uma regra à parte: ela define quanto tempo à frente o novo horário precisa estar (ex.: 2 = o paciente só vê horários a partir de 2 horas de agora). Deixando vazio, vale o mesmo número do prazo; 0 libera qualquer horário futuro.</div>
       <div class="field field-narrow" style="margin-top:16px;">
         <label>PIN de acesso administrativo</label>
         <input type="text" id="cfgAccessPin" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="5 números">
@@ -3138,14 +3142,17 @@ const RESCHEDULE_DEFAULT_MAX_COUNT = 2;
 const RESCHEDULE_SEE_RECEPTION = 'Procure a recepção da clínica.';
 let clinicNameRemoteReady = false;   // true quando agenda_settings já tem a coluna clinic_name
 let reschedRemoteReady = false;   // true quando as colunas reschedule_* já existem em agenda_settings
+let reschedNewRemoteReady = false;   // true quando agenda_settings já tem reschedule_new_min_hours (reagendamento_novo_horario.sql)
 let reschedulingApptId = null;    // paciente: consulta que está sendo reagendada agora
 function getRescheduleRules(){
   const s = DATA.settings || {};
   const num = v => (v === undefined || v === null || v === '') ? NaN : Number(v);
-  const mh = num(s.rescheduleMinHours), mc = num(s.rescheduleMaxCount);
+  const mh = num(s.rescheduleMinHours), mc = num(s.rescheduleMaxCount), nh = num(s.rescheduleNewMinHours);
+  const minHours = (Number.isFinite(mh) && mh >= 0) ? mh : RESCHEDULE_DEFAULT_MIN_HOURS;
   return {
     enabled: s.rescheduleEnabled !== false,
-    minHours: (Number.isFinite(mh) && mh >= 0) ? mh : RESCHEDULE_DEFAULT_MIN_HOURS,
+    minHours,                                                   // prazo: até quantas horas antes da consulta ATUAL
+    newMinHours: (Number.isFinite(nh) && nh >= 0) ? nh : minHours,   // antecedência mínima do NOVO horário (vazio = mesmo número do prazo)
     maxCount: (Number.isFinite(mc) && mc >= 0) ? Math.floor(mc) : RESCHEDULE_DEFAULT_MAX_COUNT   // 0 = sem limite
   };
 }
@@ -3239,6 +3246,7 @@ async function loadRescheduleRules(){
     window.__reschedRulesMissing = false;
     DATA.settings.rescheduleEnabled = data.enabled !== false;
     DATA.settings.rescheduleMinHours = Number(data.min_hours);
+    DATA.settings.rescheduleNewMinHours = (data.new_min_hours === undefined || data.new_min_hours === null) ? null : Number(data.new_min_hours);   // servidor antigo: sem este campo, vale o prazo
     DATA.settings.rescheduleMaxCount = Number(data.max_count);
   }catch(e){ window.__reschedRulesMissing = true; console.warn('Falha ao buscar regras de reagendamento', e); }
 }
@@ -3329,7 +3337,7 @@ function refreshRescheduleUi(){
     const rules = getRescheduleRules();
     document.getElementById('rescheduleBannerText').innerHTML =
       '<strong>Reagendando a consulta de ' + escapeHtml(isoToDisplay(a.date)) + ' às ' + escapeHtml(a.hour) + '.</strong> Escolha o novo dia e horário abaixo.'
-      + '<span class="rb-sub">O novo horário precisa ter pelo menos ' + escapeHtml(fmtRuleHours(rules.minHours)) + ' de antecedência. Seu sinal já pago continua valendo.</span>';
+      + '<span class="rb-sub">O novo horário precisa ter pelo menos ' + escapeHtml(fmtRuleHours(rules.newMinHours)) + ' de antecedência. Seu sinal já pago continua valendo.</span>';
   }
   updateConfirmBar();
 }
@@ -3349,7 +3357,7 @@ document.getElementById('rescheduleCancelBtn').addEventListener('click', ()=>{
 });
 function slotLeadOkForReschedule(iso, hour){
   if(!reschedulingApptId) return true;
-  return (apptStartMs({date: iso, hour}) - Date.now()) / 3600000 >= getRescheduleRules().minHours;
+  return (apptStartMs({date: iso, hour}) - Date.now()) / 3600000 >= getRescheduleRules().newMinHours;
 }
 const RESCHEDULE_SERVER_MSG = {
   janela_encerrada: () => 'O prazo para reagendar online terminou (até ' + fmtRuleHours(getRescheduleRules().minHours) + ' antes da consulta). ' + RESCHEDULE_SEE_RECEPTION,
@@ -3360,7 +3368,7 @@ const RESCHEDULE_SERVER_MSG = {
   nao_encontrado: () => 'Não encontramos essa consulta. ' + RESCHEDULE_SEE_RECEPTION,
   sessao_invalida: () => 'Sua sessão expirou. Saia, entre de novo e tente outra vez.',
   horario_ocupado: () => 'Esse horário acabou de ser ocupado. Escolha outro, por favor.',
-  antecedencia_novo: () => 'Escolha um horário com pelo menos ' + fmtRuleHours(getRescheduleRules().minHours) + ' de antecedência.',
+  antecedencia_novo: () => 'Escolha um horário com pelo menos ' + fmtRuleHours(getRescheduleRules().newMinHours) + ' de antecedência.',
   dia_sem_atendimento: () => 'Não há atendimento nesse dia. Escolha outra data.',
   horario_invalido: () => 'Esse horário não está disponível. Escolha outro, por favor.',
   mesmo_horario: () => 'Esse já é o horário da sua consulta. Escolha um horário diferente.'
@@ -3872,7 +3880,9 @@ function settingsToRow(){
     // sobrescrever o valor com um {} local.
     ...((availPermRemoteReady && currentRole === 'admin') ? { avail_permanent: DATA.availPermanent || {} } : {}),
     // Regras do reagendamento (colunas criadas por reagendamento.sql): só quando já existem no banco e quem salva é o admin.
-    ...((reschedRemoteReady && currentRole === 'admin') ? (()=>{ const rr = getRescheduleRules(); return { reschedule_enabled: rr.enabled, reschedule_min_hours: rr.minHours, reschedule_max_count: rr.maxCount }; })() : {})
+    ...((reschedRemoteReady && currentRole === 'admin') ? (()=>{ const rr = getRescheduleRules(); return { reschedule_enabled: rr.enabled, reschedule_min_hours: rr.minHours, reschedule_max_count: rr.maxCount }; })() : {}),
+    // Antecedência do novo horário (coluna criada por reagendamento_novo_horario.sql): vazio no banco = mesmo número do prazo.
+    ...((reschedNewRemoteReady && currentRole === 'admin') ? { reschedule_new_min_hours: (DATA.settings.rescheduleNewMinHours === undefined || DATA.settings.rescheduleNewMinHours === null) ? null : DATA.settings.rescheduleNewMinHours } : {})
   };
 }
 function rowToSettings(r){
@@ -3887,7 +3897,8 @@ function rowToSettings(r){
       rescheduleEnabled: r.reschedule_enabled !== false,
       rescheduleMinHours: Number(r.reschedule_min_hours),
       rescheduleMaxCount: Number(r.reschedule_max_count)
-    } : {})
+    } : {}),
+    ...(('reschedule_new_min_hours' in r) ? { rescheduleNewMinHours: (r.reschedule_new_min_hours === null || r.reschedule_new_min_hours === undefined) ? null : Number(r.reschedule_new_min_hours) } : {})
   };
 }
 // Igual ao financeiro: reconcilia a tabela inteira a cada save (upsert do
@@ -3983,6 +3994,7 @@ async function loadAgendaConfigFromSupabase(){
         else DATA.availPermanent = {};
       }
       if(settingsRes.data && settingsRes.data.length && ('reschedule_min_hours' in settingsRes.data[0])) reschedRemoteReady = true;
+      if(settingsRes.data && settingsRes.data.length && ('reschedule_new_min_hours' in settingsRes.data[0])) reschedNewRemoteReady = true;
       if(settingsRes.data && settingsRes.data.length && ('clinic_name' in settingsRes.data[0])){
         clinicNameRemoteReady = true;
         // Banco ainda sem nome gravado: sobe o nome que já está neste aparelho (quando for o admin).
@@ -4461,6 +4473,7 @@ function fillSettingsForm(){
   { const rr = getRescheduleRules();
     document.getElementById('cfgReschedEnabled').checked = rr.enabled;
     document.getElementById('cfgReschedMinHours').value = rr.minHours;
+    { const nv = DATA.settings.rescheduleNewMinHours; document.getElementById('cfgReschedNewMinHours').value = (nv === undefined || nv === null || nv === '' || !Number.isFinite(Number(nv))) ? '' : Number(nv); }
     document.getElementById('cfgReschedMaxCount').value = rr.maxCount; }
   document.getElementById('cfgAccessPin').value = DATA.settings.accessPin || '13579';
   document.getElementById('cfgProfessionalLogin').value = DATA.settings.professionalLogin || '';
@@ -6743,13 +6756,21 @@ document.getElementById('settingsForm').addEventListener('submit',(e)=>{
   {
     let rMin = parseInt(document.getElementById('cfgReschedMinHours').value, 10);
     let rMax = parseInt(document.getElementById('cfgReschedMaxCount').value, 10);
+    const rNewRaw = String(document.getElementById('cfgReschedNewMinHours').value).trim();
+    let rNew = parseInt(rNewRaw, 10);   // vazio = sem regra própria (usa o mesmo número do prazo)
     if(!(rMin >= 0)) rMin = RESCHEDULE_DEFAULT_MIN_HOURS;
     if(!(rMax >= 0)) rMax = RESCHEDULE_DEFAULT_MAX_COUNT;
+    DATA.settings.rescheduleNewMinHours = (rNewRaw !== '' && rNew >= 0) ? Math.min(rNew, 720) : null;
+    document.getElementById('cfgReschedNewMinHours').value = DATA.settings.rescheduleNewMinHours === null ? '' : DATA.settings.rescheduleNewMinHours;
     DATA.settings.rescheduleEnabled = document.getElementById('cfgReschedEnabled').checked;
     DATA.settings.rescheduleMinHours = Math.min(rMin, 720);
     DATA.settings.rescheduleMaxCount = Math.min(rMax, 20);
     document.getElementById('cfgReschedMinHours').value = DATA.settings.rescheduleMinHours;
     document.getElementById('cfgReschedMaxCount').value = DATA.settings.rescheduleMaxCount;
+    if(sbClient && reschedRemoteReady && !reschedNewRemoteReady && DATA.settings.rescheduleNewMinHours !== null && !window.__reschedNewCfgWarned){
+      window.__reschedNewCfgWarned = true;
+      alert('Atenção: para a antecedência do novo horário valer para os pacientes, rode uma vez o arquivo reagendamento_novo_horario.sql no Supabase. Até lá, os pacientes continuam usando o mesmo número do prazo.');
+    }
     if(sbClient && !reschedRemoteReady && !window.__reschedCfgWarned){
       window.__reschedCfgWarned = true;
       alert('Atenção: para o prazo de reagendamento valer para os pacientes, rode uma vez o arquivo supabase/reagendamento.sql no Supabase. Até lá, a configuração fica só neste aparelho.');
