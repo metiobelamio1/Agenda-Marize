@@ -4403,6 +4403,32 @@ function formatDateMask(raw){
   if(digits.length > 2) return digits.slice(0,2)+'/'+digits.slice(2);
   return digits;
 }
+// v62 — Bloqueio de CPF repetido na MESMA clínica (cadastro/edição feitos por admin, profissional e recepção).
+// A mesma pessoa pode ter ficha em clínicas diferentes (cada clínica = uma agenda), por isso a regra é por clínica.
+function cpfDigits(v){ return String(v == null ? '' : v).replace(/\D/g,''); }
+function findDuplicateCpfLocal(cpf, clinicId, excludeId){
+  const d = cpfDigits(cpf); if(d.length !== 11) return null;
+  return DATA.patients.find(p=>p.id !== excludeId && p.clinicId === clinicId && cpfDigits(p.cpf) === d) || null;
+}
+// Confere nos dados já carregados e também no banco (pega cadastro feito há pouco em outro computador).
+// Se o banco não responder, segue só com a conferência local (não trava o cadastro).
+async function findDuplicateCpf(cpf, clinicId, excludeId){
+  const local = findDuplicateCpfLocal(cpf, clinicId, excludeId);
+  if(local) return local;
+  const d = cpfDigits(cpf);
+  if(d.length !== 11 || typeof sbClient === 'undefined' || !sbClient) return null;
+  try{
+    const { data, error } = await sbClient.from('patients').select('id,name,cpf,clinic_id')
+      .eq('clinic_id', clinicId).in('cpf', [formatCpfMask(d), d]).limit(5);
+    if(error || !Array.isArray(data)) return null;
+    const hit = data.find(r=>r.id !== excludeId && cpfDigits(r.cpf) === d);
+    return hit ? { id: hit.id, name: hit.name, clinicId: hit.clinic_id, cpf: hit.cpf } : null;
+  }catch(e){ console.error('conferência de CPF repetido falhou (segue só com a local)', e); return null; }
+}
+function duplicateCpfMessage(dup){
+  return 'Já existe um paciente com este CPF nesta clínica: ' + (dup.name || '(sem nome)') + '. Abra a ficha dele em vez de cadastrar de novo.';
+}
+let cpfCheckBusy = false; // evita salvar duas vezes se clicarem em Salvar de novo enquanto o CPF é conferido
 function formatCpfMask(raw){
   const digits = raw.replace(/\D/g,'').slice(0,11);
   let out = digits.slice(0,3);
@@ -5801,7 +5827,7 @@ document.getElementById('apptDeleteBtn').addEventListener('click', ()=>{
   saveData();
   closeAndRefresh();
 });
-document.getElementById('apptForm').addEventListener('submit', (e)=>{
+document.getElementById('apptForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const date = document.getElementById('apptDate').value;
   const hour = document.getElementById('apptHour').value;
@@ -5838,6 +5864,18 @@ document.getElementById('apptForm').addEventListener('submit', (e)=>{
       cpf: document.getElementById('apptPCpf').value.trim(),
       address: document.getElementById('apptPAddress').value.trim()
     };
+    // v62 — CPF já existente nesta clínica: não salva (cadastro novo, ou CPF alterado na ficha existente)
+    {
+      const existingForCpf = patientId === '__new__' ? null : DATA.patients.find(x=>x.id===patientId);
+      if(cpfDigits(pPayload.cpf).length === 11 && (!existingForCpf || cpfDigits(existingForCpf.cpf) !== cpfDigits(pPayload.cpf))){
+        if(cpfCheckBusy) return;
+        cpfCheckBusy = true;
+        let dup = null;
+        try{ dup = await findDuplicateCpf(pPayload.cpf, existingForCpf ? existingForCpf.clinicId : targetClinicId, existingForCpf ? existingForCpf.id : null); }
+        finally{ cpfCheckBusy = false; }
+        if(dup){ alert(duplicateCpfMessage(dup)); return; }
+      }
+    }
     let patientRef;
     if(patientId === '__new__'){
       const newP = {id:uid(), clinicId:targetClinicId, diagnosis:'', extraInfoProfessional:'', extraInfoReception:'', progress:0, ...pPayload};
@@ -6113,8 +6151,9 @@ document.getElementById('patientDeleteBtn').addEventListener('click', ()=>{
   document.getElementById('patientOverlay').classList.remove('active');
   renderPatientList(); renderPatientDetail(); renderAgenda();
 });
-document.getElementById('patientForm').addEventListener('submit',(e)=>{
+document.getElementById('patientForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
+  if(cpfCheckBusy) return;
   const name = document.getElementById('pName').value.trim();
   if(!name) return;
   const payload = {
@@ -6128,9 +6167,23 @@ document.getElementById('patientForm').addEventListener('submit',(e)=>{
     extraInfoReception: document.getElementById('pExtraReception').value.trim(),
     progress: Number(document.getElementById('pProgress').value) || 0
   };
+  const editingId = editingPatientId;
+  const current = editingId ? DATA.patients.find(p=>p.id===editingId) : null;
+  // v62 — CPF já existente nesta clínica: não salva (só confere quando o CPF é novo ou foi alterado)
+  if(cpfDigits(payload.cpf).length === 11 && (!current || cpfDigits(current.cpf) !== cpfDigits(payload.cpf))){
+    cpfCheckBusy = true;
+    let dup = null;
+    try{ dup = await findDuplicateCpf(payload.cpf, current ? current.clinicId : adminClinicId, editingId); }
+    finally{ cpfCheckBusy = false; }
+    if(dup){
+      alert(duplicateCpfMessage(dup));
+      const cpfEl = document.getElementById('pCpf'); if(cpfEl) cpfEl.focus();
+      return;
+    }
+  }
   let syncedPatient;
-  if(editingPatientId){
-    syncedPatient = DATA.patients.find(p=>p.id===editingPatientId);
+  if(editingId){
+    syncedPatient = DATA.patients.find(p=>p.id===editingId);
     Object.assign(syncedPatient, payload);
   } else {
     const newP = {id:uid(), clinicId:adminClinicId, ...payload};
@@ -6721,6 +6774,11 @@ function renderDeletedPatients(){
       const clinicExists = DATA.clinics.find(c=>c.id===archived.clinicId);
       if(!clinicExists){
         alert('Não é possível restaurar: a clínica desta ficha não existe mais. Escolha manualmente em qual clínica recadastrar o paciente.');
+        return;
+      }
+      const dupRestore = findDuplicateCpfLocal(archived.cpf, archived.clinicId, archived.id);
+      if(dupRestore){
+        alert('Não é possível restaurar: já existe um paciente ativo com este CPF nesta clínica (' + (dupRestore.name || 'sem nome') + ').');
         return;
       }
       if(!confirm('Restaurar "' + archived.name + '" para a lista de pacientes ativos, com o histórico de atendimentos que estava registrado?')) return;
