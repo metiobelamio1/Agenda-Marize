@@ -3734,12 +3734,19 @@ function deleteAvailabilityByClinicFromSupabase(clinicId){
 // todos eles — é tudo que as regras de segurança deixam essa sessão
 // enxergar mesmo, então não tenta buscar a lista inteira de
 // pacientes/agendamentos como o login de equipe faz.
+// v61 — o paciente lê a própria ficha pela view patients_self (sem diagnóstico, observações internas nem senha).
+// Se a view ainda não existir no banco (SQL seguranca_v61.sql não rodado), cai para a tabela como antes.
+async function selectMyPatients(build){
+  let r = await build(sbClient.from('patients_self'));
+  if(r && r.error){ r = await build(sbClient.from('patients')); }
+  return r;
+}
 async function loadMyOwnDataFromSupabase(){
   if(!sbClient || !loggedPatientId) return;
   try{
     const [pRes, depRes] = await Promise.all([
-      sbClient.from('patients').select('*').eq('id', loggedPatientId),
-      sbClient.from('patients').select('*').eq('guardian_patient_id', loggedPatientId),
+      selectMyPatients(t=>t.select('*').eq('id', loggedPatientId)),
+      selectMyPatients(t=>t.select('*').eq('guardian_patient_id', loggedPatientId)),
     ]);
     const rows = [].concat(pRes.data || [], depRes.data || []);
     rows.forEach(row=>{
@@ -3777,7 +3784,7 @@ async function ensureAnonSession(){
 async function loadMyPublicDataFromSupabase(){
   if(!isPatientSupabaseMode() || !loggedPublicPatientId) return;
   try{
-    const pRes = await sbClient.from('patients').select('*');
+    const pRes = await selectMyPatients(t=>t.select('*'));
     const mine = (pRes.data || []).map(rowToPatient);
     mine.forEach(fresh=>{
       const idx = DATA.patients.findIndex(p=>p.id===fresh.id);
@@ -3789,8 +3796,10 @@ async function loadMyPublicDataFromSupabase(){
     const bRes = await sbClient.from('agenda_busy_slots').select('*');
     const mineAppts = (aRes.data || []).map(rowToAppointment);
     const mineApptIds = new Set(mineAppts.map(a=>a.id));
-    const busy = (bRes.data || []).filter(b=>!mineApptIds.has(b.id))
-      .map(b=>({ id: 'busy_' + b.id, clinicId: b.clinic_id, date: b.date, hour: b.hour, status: 'bloqueado', patientId: null }));
+    // v61 — a view agenda_busy_slots não expõe mais o id dos agendamentos: ela marca com mine=true os horários do próprio
+    // paciente (e de seus dependentes). Compatível com a view antiga (que ainda manda id) até o SQL ser rodado.
+    const busy = (bRes.data || []).filter(b=>b.mine !== true && !(b.id && mineApptIds.has(b.id)))
+      .map(b=>({ id: 'busy_' + b.clinic_id + '_' + b.date + '_' + b.hour, clinicId: b.clinic_id, date: b.date, hour: b.hour, status: 'bloqueado', patientId: null }));
     // No modo paciente a verdade é o banco: minhas consultas + horários ocupados (view). Sobras antigas deste aparelho
     // (por exemplo, de um login de equipe feito antes na mesma tela) não podem segurar um horário que o banco já liberou.
     // Se alguma das duas consultas falhar, mantém o comportamento antigo para não esconder dados.
