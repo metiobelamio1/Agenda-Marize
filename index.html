@@ -1667,8 +1667,6 @@ body.pub-booking #publicBanner{display:none}
 .inactive-card .ic-grid b{font-weight:600;font-size:.88rem}
 .inactive-card .ic-act{display:flex;gap:8px;flex-wrap:wrap}
 .inactive-card .ic-st{font-size:.78rem;color:var(--ink-soft);margin-top:8px;min-height:1em}
-.pf-inactive{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FFF1D0;border:1px solid #E5C477;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.86rem}
-.pf-inactive b{flex:1;min-width:180px}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 <style id="reschedStyles">
@@ -1750,7 +1748,7 @@ body.pub-booking #publicBanner{display:none}
         <button class="btn" id="newApptBtn">+ Novo agendamento</button>
       </div>
     </div>
-    <div class="agenda-all-hint" id="agendaAllHint" style="display:none;">Visão com todos os profissionais — selecione um profissional específico na lista acima para agendar ou bloquear horários.</div>
+    <div class="agenda-all-hint" id="agendaAllHint" style="display:none;">Visão com todos os profissionais — para agendar uma consulta, selecione um profissional específico na lista acima. O botão Bloquear horários funciona para qualquer profissional.</div>
     <div class="grid-wrap">
       <table class="agenda" id="agendaTable"></table>
     </div>
@@ -2560,6 +2558,10 @@ body.pub-booking #publicBanner{display:none}
   <div class="modal">
     <h3>Bloquear horários</h3>
     <div class="sub">Escolha o dia e marque os horários que deseja bloquear</div>
+    <div class="field" id="blockProfField" style="display:none;">
+      <label>Profissional</label>
+      <select id="blockProfSelect"></select>
+    </div>
     <button type="button" class="btn small secondary" id="unblockAllBtn" style="margin-bottom:16px;">Retirar todos os bloqueios deste profissional</button>
     <form id="blockDayForm">
       <div class="field">
@@ -2727,7 +2729,7 @@ body.pub-booking #publicBanner{display:none}
 <div class="overlay" id="pixSignalOverlay">
   <div class="modal" id="pixChoiceView">
     <h3>Como você quer confirmar?</h3>
-    <div class="sub">Seu horário fica reservado por 1 hora. Se o pagamento não for feito nesse prazo, o horário volta a ficar disponível para outras pessoas.</div>
+    <div class="sub">Seu horário fica reservado por 10 minutos. Se o pagamento não for feito nesse prazo, o horário volta a ficar disponível para outras pessoas.</div>
     <div class="modal-actions" style="flex-direction:column;gap:8px;margin-top:10px;">
       <button type="button" class="btn" id="pixChooseSinalBtn"></button>
       <button type="button" class="btn secondary" id="pixChooseTotalBtn"></button>
@@ -3642,7 +3644,7 @@ function rowToAppointment(r){
 async function loadAppointmentsFromSupabase(){
   if(!sbClient) return;
   try{
-    try{ await sbClient.rpc('liberar_reservas_vencidas'); }catch(e){}   // reservas sem pagamento há mais de 1 hora voltam a ficar livres
+    try{ await sbClient.rpc('liberar_reservas_vencidas'); }catch(e){}   // reservas sem pagamento há mais de 15 minutos voltam a ficar livres
     const { data, error } = await sbClient.from('agenda_appointments').select('*');
     if(error){ console.error('Falha ao buscar agendamentos no Supabase', error); return; }
     DATA.appointments = (data || []).map(rowToAppointment);
@@ -4020,7 +4022,6 @@ async function loadAgendaConfigFromSupabase(){
 }
 let currentWeekStart = mondayOf(new Date());
 let selectedPatientId = null;
-let patientStatusFilter = 'ativos'; // v53: filtro da lista de pacientes (ativos / inativos)
 let editingApptId = null;
 let editingPatientId = null;
 let apptType = 'agendamento';
@@ -5162,11 +5163,9 @@ function renderAdminClinicTabs(){
   wrap.style.display = (activePanel && (activePanel.id==='panel-agenda' || activePanel.id==='panel-patients')) ? 'flex' : 'none';
 }
 
-/* ---------- v53: PROFISSIONAIS E PACIENTES INATIVOS ----------
+/* ---------- v53: PROFISSIONAIS INATIVOS ----------
    Profissional inativo: login/senha deixam de valer, sai das telas e da tela do paciente,
-   mas NADA e apagado (agenda, pacientes, anexos, financeiro). Paciente inativo: sai da lista
-   de ativos; o marcador fica no campo "conditions" da ficha (nao usado em outro lugar). */
-const INACTIVE_MARK = '__inativo';
+   mas NADA e apagado (agenda, pacientes, anexos, financeiro). (v65: a funcao de inativar PACIENTE foi retirada.) */
 function isClinicActive(x){
   const c = (x && typeof x === 'object') ? x : DATA.clinics.find(k=>k.id===x);
   return !c || c.active !== false;
@@ -5174,14 +5173,6 @@ function isClinicActive(x){
 function activeClinics(){ return DATA.clinics.filter(c=>c.active !== false); }
 function inactiveClinics(){ return DATA.clinics.filter(c=>c.active === false); }
 function firstActiveClinicId(){ const c = activeClinics()[0] || DATA.clinics[0]; return c ? c.id : null; }
-function isPatientInactive(p){ return !!(p && Array.isArray(p.conditions) && p.conditions.indexOf(INACTIVE_MARK) >= 0); }
-function setPatientInactive(p, flag){
-  const arr = (Array.isArray(p.conditions) ? p.conditions : []).filter(x=>x !== INACTIVE_MARK);
-  if(flag) arr.push(INACTIVE_MARK);
-  p.conditions = arr;
-  try{ syncPatientToSupabase(p); }catch(e){ console.error(e); }
-  saveData();
-}
 
 /* ---------- ADMIN AGENDA RENDER ---------- */
 function allClinicsHourRange(){
@@ -5203,7 +5194,9 @@ function renderAgenda(){
   const hint = document.getElementById('agendaAllHint');
   const actions = document.getElementById('adminAgendaActions');
   if(hint) hint.style.display = 'none'; // a visão "Todas" já deixa claro de quem é cada coluna
-  if(actions) actions.style.display = showAll ? 'none' : 'flex';
+  if(actions) actions.style.display = 'flex';
+  const newApptBtnEl = document.getElementById('newApptBtn');
+  if(newApptBtnEl) newApptBtnEl.style.display = showAll ? 'none' : '';   // v65: na visão "Todos os profissionais" só o bloqueio fica disponível
 
   if(showAll){
     renderAgendaAllProfessionalsDay();
@@ -5376,20 +5369,21 @@ document.getElementById('gotoToday').addEventListener('click', ()=>{
   renderAgenda();
 });
 document.getElementById('newApptBtn').addEventListener('click', ()=>openApptModal(null, fmtDate(new Date()), hourRange(adminClinicId)[0], 'agendamento'));
-document.getElementById('blockSlotBtn').addEventListener('click', ()=>openBlockDayModal());
+// v65 — o modal de bloqueio trabalha com o profissional escolhido nele (na visão "Todos os profissionais" ele escolhe; nas abas, é o da aba)
+let blockClinicId = null;
+function blockClinic(){ return blockClinicId || adminClinicId; }
+document.getElementById('blockSlotBtn').addEventListener('click', ()=>openBlockDayModal(agendaShowAll && (currentRole === 'admin' || currentRole === 'receptionist')));
 document.getElementById('unblockAllBtn').addEventListener('click', ()=>{
-  const clinic = getClinic(adminClinicId);
+  const clinic = getClinic(blockClinic());
   const clinicName = clinic ? clinic.name : 'esta clínica';
-  // Escopo sempre restrito à clínica selecionada nas abas (adminClinicId) —
-  // o modal só abre com uma clínica específica ativa (o botão "Bloquear
-  // horários" some na visão "Todas", ver renderAgenda), então nunca mexe
-  // em bloqueios de outra clínica.
-  const toRemove = DATA.appointments.filter(a=>a.status==='bloqueado' && a.clinicId===adminClinicId);
+  // Escopo sempre restrito ao profissional do modal (blockClinic()): o da aba aberta, ou o escolhido
+  // no campo "Profissional" quando o modal foi aberto pela visão "Todos os profissionais".
+  const toRemove = DATA.appointments.filter(a=>a.status==='bloqueado' && a.clinicId===blockClinic());
   if(!toRemove.length){ alert('Não há horários bloqueados em ' + clinicName + '.'); return; }
   if(!confirm('Retirar todos os ' + toRemove.length + ' horário(s) bloqueado(s) de ' + clinicName + '? Isso libera esses horários para novos agendamentos. Bloqueios de outras clínicas não são afetados.')) return;
   const idsToRemove = new Set(toRemove.map(a=>a.id));
   DATA.appointments = DATA.appointments.filter(a=>!idsToRemove.has(a.id));
-  deleteBlockedAppointmentsByClinicFromSupabase(adminClinicId);
+  deleteBlockedAppointmentsByClinicFromSupabase(blockClinic());
   saveData();
   document.getElementById('blockDayOverlay').classList.remove('active');
   renderAgenda();
@@ -5397,16 +5391,15 @@ document.getElementById('unblockAllBtn').addEventListener('click', ()=>{
 });
 
 /* ---------- BLOCK WHOLE DAY MODAL ---------- */
-function openBlockDayModal(){
+function setupBlockDateField(){
   const dateInput = document.getElementById('blockDate');
   const dateSelect = document.getElementById('blockDateSelect');
   const receptionHint = document.getElementById('blockDateReceptionHint');
   const isReceptionist = currentRole === 'receptionist';
 
   if(isReceptionist){
-    // Recepção só pode bloquear em dias que a profissional já atende
-    // nesta clínica — evita bloquear datas "soltas" sem atendimento.
-    const availDates = getFutureAvailableDates(adminClinicId);
+    // Recepção só pode bloquear em dias que o profissional já atende — evita bloquear datas "soltas" sem atendimento.
+    const availDates = getFutureAvailableDates(blockClinic());
     dateSelect.innerHTML = availDates.length
       ? availDates.map(iso=>`<option value="${iso}">${isoToDisplay(iso)}</option>`).join('')
       : '<option value="">Nenhum dia disponível marcado nesta clínica</option>';
@@ -5421,13 +5414,33 @@ function openBlockDayModal(){
     dateSelect.style.display = 'none';
     receptionHint.style.display = 'none';
   }
-
+}
+function openBlockDayModal(fromAll){
+  const profField = document.getElementById('blockProfField');
+  const profSel = document.getElementById('blockProfSelect');
+  if(fromAll){
+    const clinics = activeClinics();
+    profSel.innerHTML = clinics.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}${c.specialty ? ' · ' + escapeHtml(c.specialty) : ''}</option>`).join('');
+    blockClinicId = clinics.some(c=>c.id===adminClinicId) ? adminClinicId : (clinics[0] ? clinics[0].id : null);
+    profSel.value = blockClinicId || '';
+    profField.style.display = '';
+  } else {
+    blockClinicId = adminClinicId;
+    profField.style.display = 'none';
+  }
+  setupBlockDateField();
   document.getElementById('blockReason').value = '';
   document.getElementById('blockAllAvailDaysChk').checked = false;
   updateBlockAllAvailMode();
   renderBlockHourGrid();
   document.getElementById('blockDayOverlay').classList.add('active');
 }
+document.getElementById('blockProfSelect').addEventListener('change', function(){
+  blockClinicId = this.value || null;
+  setupBlockDateField();
+  updateBlockAllAvailMode();
+  renderBlockHourGrid();
+});
 document.getElementById('blockDateSelect').addEventListener('change', function(){
   document.getElementById('blockDate').value = this.value;
   renderBlockHourGrid();
@@ -5445,7 +5458,7 @@ function updateBlockAllAvailMode(){
   dateField.style.display = allDays ? 'none' : '';
   const hint = document.getElementById('blockAllAvailHint');
   if(allDays){
-    const count = getFutureAvailableDates(adminClinicId).length;
+    const count = getFutureAvailableDates(blockClinic()).length;
     hint.textContent = count
       ? `Vai bloquear os horários marcados abaixo em ${count} dia(s) com atendimento já marcado nesta clínica a partir de hoje. Horários já ocupados ou bloqueados em cada dia são pulados automaticamente.`
       : 'Nenhum dia disponível marcado ainda nesta clínica (veja a aba "Disponibilidade"). Marque dias primeiro para poder usar essa opção.';
@@ -5462,12 +5475,12 @@ function renderBlockHourGrid(){
   const invalidHint = document.getElementById('blockDateInvalidHint');
 
   // O bloqueio só pode ser concluído em um dia que é de atendimento da
-  // clínica atualmente selecionada (adminClinicId) — vale para qualquer
+  // clínica atualmente selecionada (blockClinic()) — vale para qualquer
   // clínica e qualquer papel (profissional ou recepção).
-  const dayValid = allDays || isAvailableDay(iso, adminClinicId);
+  const dayValid = allDays || isAvailableDay(iso, blockClinic());
 
   if(!dayValid){
-    const clinicName = (getClinic(adminClinicId) || {}).name || 'esta clínica';
+    const clinicName = (getClinic(blockClinic()) || {}).name || 'esta clínica';
     grid.innerHTML = '';
     if(selectAllBtn) selectAllBtn.disabled = true;
     if(submitBtn) submitBtn.disabled = true;
@@ -5482,9 +5495,9 @@ function renderBlockHourGrid(){
   if(submitBtn) submitBtn.disabled = false;
   if(invalidHint) invalidHint.style.display = 'none';
 
-  const hours = allDays ? hourRange(adminClinicId) : hourRangeForDate(iso, adminClinicId);
+  const hours = allDays ? hourRange(blockClinic()) : hourRangeForDate(iso, blockClinic());
   grid.innerHTML = hours.map(h=>{
-    const existing = !allDays && DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===adminClinicId);
+    const existing = !allDays && DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===blockClinic());
     const taken = !!existing;
     const tag = taken ? (existing.status==='bloqueado' ? 'bloqueado' : 'ocupado') : '';
     return `<label class="hour-check ${taken?'disabled':''}">
@@ -5516,17 +5529,17 @@ document.getElementById('blockDayForm').addEventListener('submit', (e)=>{
   if(!checked.length){ alert('Selecione ao menos um horário para bloquear.'); return; }
 
   if(allDays){
-    const dates = getFutureAvailableDates(adminClinicId);
+    const dates = getFutureAvailableDates(blockClinic());
     if(!dates.length){ alert('Nenhum dia disponível marcado nesta clínica ainda.'); return; }
     let blocked = 0;
     const newlyBlocked = [];
     dates.forEach(iso=>{
-      const win = hourRangeForDate(iso, adminClinicId);
+      const win = hourRangeForDate(iso, blockClinic());
       checked.forEach(h=>{
         if(!win.includes(h)) return;
-        const conflict = DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===adminClinicId);
+        const conflict = DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===blockClinic());
         if(conflict) return;
-        const blockAppt = {id:uid(), patientId:null, clinicId:adminClinicId, date:iso, hour:h, status:'bloqueado', note:reason};
+        const blockAppt = {id:uid(), patientId:null, clinicId:blockClinic(), date:iso, hour:h, status:'bloqueado', note:reason};
         DATA.appointments.push(blockAppt);
         newlyBlocked.push(blockAppt);
         blocked++;
@@ -5545,17 +5558,17 @@ document.getElementById('blockDayForm').addEventListener('submit', (e)=>{
   if(!iso){ alert('Escolha uma data.'); return; }
   // Trava de segurança: só conclui o bloqueio se o dia escolhido for de
   // atendimento da clínica atualmente selecionada — vale para qualquer clínica.
-  if(!isAvailableDay(iso, adminClinicId)){
-    const clinicName = (getClinic(adminClinicId) || {}).name || 'esta clínica';
+  if(!isAvailableDay(iso, blockClinic())){
+    const clinicName = (getClinic(blockClinic()) || {}).name || 'esta clínica';
     alert('Não é possível bloquear horários nesse dia: ' + clinicName + ' não tem atendimento marcado nessa data.');
     return;
   }
   let blocked = 0;
   const newlyBlockedSingleDay = [];
   checked.forEach(h=>{
-    const conflict = DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===adminClinicId);
+    const conflict = DATA.appointments.find(a=>holdsSlot(a) && a.date===iso && a.hour===h && a.clinicId===blockClinic());
     if(conflict) return;
-    const blockAppt = {id:uid(), patientId:null, clinicId:adminClinicId, date:iso, hour:h, status:'bloqueado', note:reason};
+    const blockAppt = {id:uid(), patientId:null, clinicId:blockClinic(), date:iso, hour:h, status:'bloqueado', note:reason};
     DATA.appointments.push(blockAppt);
     newlyBlockedSingleDay.push(blockAppt);
     blocked++;
@@ -5570,7 +5583,7 @@ document.getElementById('blockDayForm').addEventListener('submit', (e)=>{
 /* ---------- APPOINTMENT / BLOCK MODAL ---------- */
 function fillPatientSelect(selectedId){
   const sel = document.getElementById('apptPatient');
-  const clinicPatients = DATA.patients.filter(p=>p.clinicId===adminClinicId && (!isPatientInactive(p) || p.id===selectedId));
+  const clinicPatients = DATA.patients.filter(p=>p.clinicId===(currentApptClinicId || adminClinicId));
   const newOption = '<option value="__new__">+ Cadastrar novo paciente</option>';
   sel.innerHTML = newOption + clinicPatients.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   sel.value = selectedId || '__new__';
@@ -5980,11 +5993,11 @@ document.getElementById('apptForm').addEventListener('submit', async (e)=>{
 function renderPatientList(){
   const q = (document.getElementById('patientSearch').value || '').toLowerCase();
   const list = DATA.patients
-    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q) && (patientStatusFilter === 'inativos') === isPatientInactive(p))
+    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q))
     .sort((a,b)=>a.name.localeCompare(b.name));
   const container = document.getElementById('patientList');
   if(!list.length){
-    container.innerHTML = '<p class="empty-note">' + (patientStatusFilter === 'inativos' ? 'Nenhum paciente inativo.' : 'Nenhum paciente encontrado.') + '</p>';
+    container.innerHTML = '<p class="empty-note">Nenhum paciente encontrado.</p>';
     return;
   }
   container.innerHTML = list.map(p=>{
@@ -8126,8 +8139,6 @@ document.getElementById('bookForm').addEventListener('submit', async (e)=>{
   const whomValue = document.getElementById('bookForWhom').value;
   let targetPatientId = loggedPatientId;
   let bookedBySelf = true;
-  // v53: paciente inativo que volta a agendar pelo site passa a ativo de novo
-  try{ [loggedPatientId, whomValue].forEach(id=>{ const pp = DATA.patients.find(x=>x.id===id); if(pp && isPatientInactive(pp)) setPatientInactive(pp, false); }); }catch(e){ console.error(e); }
 
   if(whomValue === '__new__'){
     const depName = document.getElementById('bookDepName').value.trim();
@@ -8318,7 +8329,7 @@ function openCardView(){
   const tipoTxt = CARD_DEBIT_ENABLED
     ? (podeParcelar ? 'crédito (à vista ou em até 6x) ou débito (à vista).' : 'crédito ou débito, à vista.')
     : (podeParcelar ? 'cartão de crédito, à vista ou em até 6x (escolha as parcelas no formulário).' : 'cartão de crédito, à vista. O parcelamento está disponível no pagamento da consulta completa.');
-  document.getElementById('cardHint').textContent = `${fmtMoneyPublic(payChoice.value)} — ${tipoTxt} O horário fica reservado por 1 hora desde o agendamento.`;
+  document.getElementById('cardHint').textContent = `${fmtMoneyPublic(payChoice.value)} — ${tipoTxt} O horário fica reservado por 10 minutos desde o agendamento.`;
   document.getElementById('cardEmail').value = '';
   document.getElementById('cardType').value = 'credit_card';
   document.getElementById('cardTypeBox').style.display = CARD_DEBIT_ENABLED ? '' : 'none';
@@ -8602,7 +8613,7 @@ async function startPixPayment(appt, signalInfo, paymentType, existingReceivable
   document.getElementById('pixWaitHint').style.display = '';
   // Tempo que o paciente ainda tem (a função devolve em segundos); se não vier, assume 1 hora.
   const secsLeft = Number(lastPixSecondsLeft);
-  startPixCountdown(Number.isFinite(secsLeft) && secsLeft > 0 ? secsLeft : 3600);
+  startPixCountdown(Number.isFinite(secsLeft) && secsLeft > 0 ? secsLeft : 600);
 
   // Consulta a Edge Function check-payment-status a cada 4 segundos até o
   // Mercado Pago confirmar (via webhook) que o Pix foi pago.
@@ -11772,45 +11783,11 @@ initFinanceiro();
 })();
 </script>
 <script>
-/* v53 - interface de profissionais e pacientes inativos */
+/* v53 - interface de profissionais inativos (v65: sem a parte de pacientes) */
 (function(){
   function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
   function slug(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
   function dl(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},1000);}
-  /* ---------- pacientes: filtro ativos/inativos ---------- */
-  var layout=document.querySelector('.patients-layout'),listCol=layout.firstElementChild,search=document.getElementById('patientSearch');
-  var ps=el('div','pt-status'),bA=el('button','on','Ativos'),bI=el('button',null,'Inativos');
-  bA.type=bI.type='button';bA.dataset.f='ativos';bI.dataset.f='inativos';ps.id='ptStatusFilter';ps.appendChild(bA);ps.appendChild(bI);
-  listCol.insertBefore(ps,search.closest('.patients-list-head')||listCol.querySelector('.patients-list-head')||listCol.firstChild);
-  function counts(){
-    var all=DATA.patients.filter(function(p){return p.clinicId===adminClinicId;}),ni=all.filter(isPatientInactive).length;
-    bA.textContent='Ativos ('+(all.length-ni)+')';bI.textContent='Inativos ('+ni+')';
-    bA.classList.toggle('on',patientStatusFilter==='ativos');bI.classList.toggle('on',patientStatusFilter==='inativos');
-  }
-  ps.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;patientStatusFilter=b.dataset.f;renderPatientList();});
-  var oL=window.renderPatientList;
-  window.renderPatientList=function(){var r=oL.apply(this,arguments);try{counts();}catch(e){console.error(e);}return r;};
-  var oD=window.renderPatientDetail;
-  window.renderPatientDetail=function(){var r=oD.apply(this,arguments);try{decorate();}catch(e){console.error(e);}return r;};
-  function decorate(){
-    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;}),pf=document.querySelector('#patientDetail .pf');if(!p||!pf)return;
-    var hd=pf.querySelector('.pf-head');if(!hd)return;
-    if(isPatientInactive(p)){
-      var bn=el('div','pf-inactive'),tx=el('b',null,'Paciente inativo: n\u00e3o aparece na lista de ativos nem para novos agendamentos feitos pela equipe. Se voltar a agendar pelo site, volta a ficar ativo.'),re=el('button','btn small',"Reativar paciente");
-      re.type='button';re.id='ptReactivateBtn';bn.appendChild(tx);bn.appendChild(re);pf.insertBefore(bn,hd);
-    }else{
-      var ib=el('button','btn small secondary','Inativar paciente');ib.type='button';ib.id='ptInactivateBtn';hd.appendChild(ib);
-    }
-  }
-  document.getElementById('patientDetail').addEventListener('click',function(e){
-    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;});if(!p)return;
-    if(e.target.closest('#ptInactivateBtn')){
-      if(!confirm('Marcar "'+p.name+'" como inativo?\n\nEle sai da lista de pacientes ativos, mas a ficha, o hist\u00f3rico e os anexos continuam guardados. Voc\u00ea pode reativar quando quiser.'))return;
-      setPatientInactive(p,true);renderPatientList();renderPatientDetail();
-    }else if(e.target.closest('#ptReactivateBtn')){
-      setPatientInactive(p,false);renderPatientList();renderPatientDetail();
-    }
-  });
   /* ---------- profissionais: filtro, inativar, reativar e backup ---------- */
   var list=document.getElementById('clinicsConfig'),pane=list.closest('.cfg-pane'),addBtn=document.getElementById('addClinicBtn'),subRow=document.querySelector('#settingsForm .settings-submit-row');
   var bar=el('div','pro-filter'),fa=el('button','on','Ativos'),fi=el('button',null,'Inativos'),inact=el('div'),pf='ativos';
@@ -11934,7 +11911,7 @@ initFinanceiro();
     }catch(e){say('Falha ao baixar os anexos: '+(e.message||e));}
   }
   window.__v53={makeZip:makeZip,crc32:crc32,buildBackup:buildBackup};
-  counts();paint();
+  paint();
 })();
 </script>
 </body>
