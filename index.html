@@ -1667,6 +1667,8 @@ body.pub-booking #publicBanner{display:none}
 .inactive-card .ic-grid b{font-weight:600;font-size:.88rem}
 .inactive-card .ic-act{display:flex;gap:8px;flex-wrap:wrap}
 .inactive-card .ic-st{font-size:.78rem;color:var(--ink-soft);margin-top:8px;min-height:1em}
+.pf-inactive{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#FFF1D0;border:1px solid #E5C477;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.86rem}
+.pf-inactive b{flex:1;min-width:180px}
 </style>
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 <style id="reschedStyles">
@@ -2657,7 +2659,6 @@ body.pub-booking #publicBanner{display:none}
       <div class="modal-actions">
         <button type="submit" class="btn">Salvar</button>
         <button type="button" class="btn secondary" id="patientCancelBtn">Cancelar</button>
-        <button type="button" class="btn danger" id="patientDeleteBtn" style="display:none;margin-left:auto;">Excluir paciente</button>
       </div>
     </form>
   </div>
@@ -4022,6 +4023,7 @@ async function loadAgendaConfigFromSupabase(){
 }
 let currentWeekStart = mondayOf(new Date());
 let selectedPatientId = null;
+let patientStatusFilter = 'ativos'; // v53: filtro da lista de pacientes (ativos / inativos)
 let editingApptId = null;
 let editingPatientId = null;
 let apptType = 'agendamento';
@@ -5163,9 +5165,11 @@ function renderAdminClinicTabs(){
   wrap.style.display = (activePanel && (activePanel.id==='panel-agenda' || activePanel.id==='panel-patients')) ? 'flex' : 'none';
 }
 
-/* ---------- v53: PROFISSIONAIS INATIVOS ----------
+/* ---------- v53: PROFISSIONAIS E PACIENTES INATIVOS ----------
    Profissional inativo: login/senha deixam de valer, sai das telas e da tela do paciente,
-   mas NADA e apagado (agenda, pacientes, anexos, financeiro). (v65: a funcao de inativar PACIENTE foi retirada.) */
+   mas NADA e apagado (agenda, pacientes, anexos, financeiro). Paciente inativo: sai da lista
+   de ativos; o marcador fica no campo "conditions" da ficha (nao usado em outro lugar). */
+const INACTIVE_MARK = '__inativo';
 function isClinicActive(x){
   const c = (x && typeof x === 'object') ? x : DATA.clinics.find(k=>k.id===x);
   return !c || c.active !== false;
@@ -5173,6 +5177,15 @@ function isClinicActive(x){
 function activeClinics(){ return DATA.clinics.filter(c=>c.active !== false); }
 function inactiveClinics(){ return DATA.clinics.filter(c=>c.active === false); }
 function firstActiveClinicId(){ const c = activeClinics()[0] || DATA.clinics[0]; return c ? c.id : null; }
+
+function isPatientInactive(p){ return !!(p && Array.isArray(p.conditions) && p.conditions.indexOf(INACTIVE_MARK) >= 0); }
+function setPatientInactive(p, flag){
+  const arr = (Array.isArray(p.conditions) ? p.conditions : []).filter(x=>x !== INACTIVE_MARK);
+  if(flag) arr.push(INACTIVE_MARK);
+  p.conditions = arr;
+  try{ syncPatientToSupabase(p); }catch(e){ console.error(e); }
+  saveData();
+}
 
 /* ---------- ADMIN AGENDA RENDER ---------- */
 function allClinicsHourRange(){
@@ -5583,7 +5596,7 @@ document.getElementById('blockDayForm').addEventListener('submit', (e)=>{
 /* ---------- APPOINTMENT / BLOCK MODAL ---------- */
 function fillPatientSelect(selectedId){
   const sel = document.getElementById('apptPatient');
-  const clinicPatients = DATA.patients.filter(p=>p.clinicId===(currentApptClinicId || adminClinicId));
+  const clinicPatients = DATA.patients.filter(p=>p.clinicId===(currentApptClinicId || adminClinicId) && (!isPatientInactive(p) || p.id===selectedId));
   const newOption = '<option value="__new__">+ Cadastrar novo paciente</option>';
   sel.innerHTML = newOption + clinicPatients.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   sel.value = selectedId || '__new__';
@@ -5993,11 +6006,11 @@ document.getElementById('apptForm').addEventListener('submit', async (e)=>{
 function renderPatientList(){
   const q = (document.getElementById('patientSearch').value || '').toLowerCase();
   const list = DATA.patients
-    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q))
+    .filter(p=>p.clinicId===adminClinicId && p.name.toLowerCase().includes(q) && (patientStatusFilter === 'inativos') === isPatientInactive(p))
     .sort((a,b)=>a.name.localeCompare(b.name));
   const container = document.getElementById('patientList');
   if(!list.length){
-    container.innerHTML = '<p class="empty-note">Nenhum paciente encontrado.</p>';
+    container.innerHTML = '<p class="empty-note">' + (patientStatusFilter === 'inativos' ? 'Nenhum paciente inativo.' : 'Nenhum paciente encontrado.') + '</p>';
     return;
   }
   container.innerHTML = list.map(p=>{
@@ -6092,7 +6105,6 @@ function renderPatientDetail(){
 document.getElementById('newPatientBtn').addEventListener('click', ()=>openPatientModal(null));
 function openPatientModal(patientId){
   editingPatientId = patientId;
-  const delBtn = document.getElementById('patientDeleteBtn');
   if(patientId){
     const p = DATA.patients.find(x=>x.id===patientId);
     document.getElementById('patientModalTitle').textContent = 'Editar paciente';
@@ -6105,7 +6117,6 @@ function openPatientModal(patientId){
     document.getElementById('pExtraProfessional').value = p.extraInfoProfessional || '';
     document.getElementById('pExtraReception').value = p.extraInfoReception || '';
     document.getElementById('pProgress').value = p.progress || 0;
-    delBtn.style.display = 'inline-block';
   } else {
     document.getElementById('patientModalTitle').textContent = 'Novo paciente';
     document.getElementById('pName').value = '';
@@ -6117,7 +6128,6 @@ function openPatientModal(patientId){
     document.getElementById('pExtraProfessional').value = '';
     document.getElementById('pExtraReception').value = '';
     document.getElementById('pProgress').value = 0;
-    delBtn.style.display = 'none';
   }
   const isReceptionist = currentRole === 'receptionist';
   // A recepção só edita a própria caixa de "informações adicionais" —
@@ -6153,29 +6163,6 @@ function openPatientModal(patientId){
 // concluídas" (ver renderPatientDetail).
 document.getElementById('patientCancelBtn').addEventListener('click', ()=>{
   document.getElementById('patientOverlay').classList.remove('active');
-});
-document.getElementById('patientDeleteBtn').addEventListener('click', ()=>{
-  if(!editingPatientId) return;
-  if(!confirm('Excluir este paciente e todo o seu histórico de agendamentos?')) return;
-  const patientSnapshot = DATA.patients.find(p=>p.id===editingPatientId);
-  if(patientSnapshot){
-    if(!Array.isArray(DATA.deletedPatients)) DATA.deletedPatients = [];
-    const archived = {
-      ...patientSnapshot,
-      clinicName: (getClinic(patientSnapshot.clinicId)||{}).name || '',
-      appointments: DATA.appointments.filter(a=>a.patientId===editingPatientId),
-      deletedAt: fmtDate(new Date())
-    };
-    DATA.deletedPatients.push(archived);
-    syncDeletedPatientToSupabase(archived);
-  }
-  DATA.patients = DATA.patients.filter(p=>p.id!==editingPatientId);
-  DATA.appointments = DATA.appointments.filter(a=>a.patientId!==editingPatientId);
-  deletePatientFromSupabase(editingPatientId);
-  if(selectedPatientId===editingPatientId) selectedPatientId = null;
-  saveData();
-  document.getElementById('patientOverlay').classList.remove('active');
-  renderPatientList(); renderPatientDetail(); renderAgenda();
 });
 document.getElementById('patientForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -8139,6 +8126,8 @@ document.getElementById('bookForm').addEventListener('submit', async (e)=>{
   const whomValue = document.getElementById('bookForWhom').value;
   let targetPatientId = loggedPatientId;
   let bookedBySelf = true;
+  // v53: paciente inativo que volta a agendar pelo site passa a ativo de novo
+  try{ [loggedPatientId, whomValue].forEach(id=>{ const pp = DATA.patients.find(x=>x.id===id); if(pp && isPatientInactive(pp)) setPatientInactive(pp, false); }); }catch(e){ console.error(e); }
 
   if(whomValue === '__new__'){
     const depName = document.getElementById('bookDepName').value.trim();
@@ -11783,11 +11772,45 @@ initFinanceiro();
 })();
 </script>
 <script>
-/* v53 - interface de profissionais inativos (v65: sem a parte de pacientes) */
+/* v53 - interface de profissionais e pacientes inativos */
 (function(){
   function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
   function slug(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
   function dl(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},1000);}
+  /* ---------- pacientes: filtro ativos/inativos ---------- */
+  var layout=document.querySelector('.patients-layout'),listCol=layout.firstElementChild,search=document.getElementById('patientSearch');
+  var ps=el('div','pt-status'),bA=el('button','on','Ativos'),bI=el('button',null,'Inativos');
+  bA.type=bI.type='button';bA.dataset.f='ativos';bI.dataset.f='inativos';ps.id='ptStatusFilter';ps.appendChild(bA);ps.appendChild(bI);
+  listCol.insertBefore(ps,search.closest('.patients-list-head')||listCol.querySelector('.patients-list-head')||listCol.firstChild);
+  function counts(){
+    var all=DATA.patients.filter(function(p){return p.clinicId===adminClinicId;}),ni=all.filter(isPatientInactive).length;
+    bA.textContent='Ativos ('+(all.length-ni)+')';bI.textContent='Inativos ('+ni+')';
+    bA.classList.toggle('on',patientStatusFilter==='ativos');bI.classList.toggle('on',patientStatusFilter==='inativos');
+  }
+  ps.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;patientStatusFilter=b.dataset.f;renderPatientList();});
+  var oL=window.renderPatientList;
+  window.renderPatientList=function(){var r=oL.apply(this,arguments);try{counts();}catch(e){console.error(e);}return r;};
+  var oD=window.renderPatientDetail;
+  window.renderPatientDetail=function(){var r=oD.apply(this,arguments);try{decorate();}catch(e){console.error(e);}return r;};
+  function decorate(){
+    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;}),pf=document.querySelector('#patientDetail .pf');if(!p||!pf)return;
+    var hd=pf.querySelector('.pf-head');if(!hd)return;
+    if(isPatientInactive(p)){
+      var bn=el('div','pf-inactive'),tx=el('b',null,'Paciente inativo: n\u00e3o aparece na lista de ativos nem para novos agendamentos feitos pela equipe. Se voltar a agendar pelo site, volta a ficar ativo.'),re=el('button','btn small',"Reativar paciente");
+      re.type='button';re.id='ptReactivateBtn';bn.appendChild(tx);bn.appendChild(re);pf.insertBefore(bn,hd);
+    }else{
+      var ib=el('button','btn small secondary','Inativar paciente');ib.type='button';ib.id='ptInactivateBtn';hd.appendChild(ib);
+    }
+  }
+  document.getElementById('patientDetail').addEventListener('click',function(e){
+    var p=DATA.patients.find(function(x){return x.id===selectedPatientId;});if(!p)return;
+    if(e.target.closest('#ptInactivateBtn')){
+      if(!confirm('Marcar "'+p.name+'" como inativo?\n\nEle sai da lista de pacientes ativos, mas a ficha, o hist\u00f3rico e os anexos continuam guardados. Voc\u00ea pode reativar quando quiser.'))return;
+      setPatientInactive(p,true);renderPatientList();renderPatientDetail();
+    }else if(e.target.closest('#ptReactivateBtn')){
+      setPatientInactive(p,false);renderPatientList();renderPatientDetail();
+    }
+  });
   /* ---------- profissionais: filtro, inativar, reativar e backup ---------- */
   var list=document.getElementById('clinicsConfig'),pane=list.closest('.cfg-pane'),addBtn=document.getElementById('addClinicBtn'),subRow=document.querySelector('#settingsForm .settings-submit-row');
   var bar=el('div','pro-filter'),fa=el('button','on','Ativos'),fi=el('button',null,'Inativos'),inact=el('div'),pf='ativos';
@@ -11911,7 +11934,7 @@ initFinanceiro();
     }catch(e){say('Falha ao baixar os anexos: '+(e.message||e));}
   }
   window.__v53={makeZip:makeZip,crc32:crc32,buildBackup:buildBackup};
-  paint();
+  counts();paint();
 })();
 </script>
 </body>
